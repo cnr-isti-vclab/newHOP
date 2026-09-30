@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>newHOP minimal</title>
+  <style>
+    html, body, #viewer { width: 100%; height: 100%; margin: 0; }
+    body { overflow: hidden; background: #1c2024; }
+  </style>
+</head>
+<body>
+  <div id="viewer"></div>
+  <script type="module">
+    import { Presenter, Toolbar } from '../src/index.ts';
+
+    const presenter = new Presenter({ mount: 'viewer' });
+    const toolbar = new Toolbar(presenter, { position: 'bottom-center' });
+
+    presenter.measurement.setOnComplete((result) => {
+      console.log('Measurement:', result.distance.toFixed(3), 'units');
+    });
+
+    presenter.picking.setOnPick((result) => {
+      console.log('Picked point:', result.point.toArray());
+    });
+
+    presenter.setScene({
+      world: {
+        background: {
+          file: 'media/env.jpg',
+          azimuth: -90
+        }
+      },
+      navigation: {
+        type: 'turntable',
+        homeView: { azimuth: 0, elevation: 0 }
+      },
+      helpers: {
+        origin: { type: 'axes', size: 300, color: 0xa5b4fc },
+        floor: { type: 'grid', size: 100, spacing: 5.0, color: 0x7dd3fc, opacity: 0.7 },
+        extent: { type: 'sceneextent'}
+      },
+      objects: {
+        laurana: { file: 'models/laurana.ply' }
+      },
+      spots: {
+        hotspot: { primitive: 'sphere', size: 0.1 }
+      }
+    }).then(() => {
+      presenter.setMeasurementMode(false);
+      presenter.setPickingMode(true);
+      presenter.setClipPlane('x', 0.15, false);
+    });
+  </script>
+</body>
+</html>

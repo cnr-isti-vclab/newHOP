@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>newHOP lighting</title>
+  <style>
+    :root { color-scheme: dark; --text: #e5e7eb; --muted: #aab4c3; --accent: #7dd3fc; --line: rgba(148, 163, 184, 0.24); }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: linear-gradient(145deg, #0b1120, #172033); color: var(--text); font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.6; }
+    main { width: min(980px, calc(100vw - 32px)); margin: 0 auto; padding: 44px 0 72px; }
+    nav { margin-bottom: 28px; } a { color: var(--accent); }
+    h1 { margin: 0 0 8px; font-size: clamp(2rem, 5vw, 3.2rem); } h2 { margin: 42px 0 12px; font-size: 1.55rem; } h3 { margin: 34px 0 10px; color: var(--accent); font-size: 1.4rem; font-weight: 700; } h3 code { font-size: 1em; }
+    .lede, .note { color: var(--muted); } .note { padding: 14px 16px; border-left: 3px solid var(--accent); background: rgba(17, 24, 39, 0.8); }
+    pre { overflow-x: auto; margin: 14px 0 20px; padding: 16px; border: 1px solid var(--line); border-radius: 8px; background: #080d18; color: #dbeafe; }
+    code { font-family: Consolas, "Courier New", monospace; font-size: 0.92em; } table { width: 100%; border-collapse: collapse; margin: 12px 0 24px; background: rgba(17, 24, 39, 0.66); }
+    th, td { padding: 10px 12px; border: 1px solid var(--line); text-align: left; vertical-align: top; } th { color: var(--accent); font-weight: 600; }
+  </style>
+</head>
+<body>
+  <main>
+    <nav><a href="index.html">Documentation index</a> · <a href="../index.html">Examples</a> · <a href="../examples/lighting.html">Lighting example</a></nav>
+    <h1>Lighting</h1>
+    <p class="lede">The <code>lighting</code> block creates lights for the scene and an optional camera-mounted flashlight. The <code>lights</code> subblock defines all the lights that will be present in the scene. Each light is identified by its unique key, which serves as the runtime identifier for that light, and a set of parameters (different for each light type). The <code>flashlight</code> subblock defines the optional camera-mounted flashlight.</p> 
+    <p>Lights on/off status can also be defined at the declaration stage.</p>
+
+    <h2>Lighting block example</h2>
+    <pre><code>
+lighting: {
+  lights: {
+    fill: {
+      type: 'hemisphere',
+      color: 0xffffff,
+      groundColor: 0x444444,
+      intensity: 1,
+      position: [0, 1, 0]
+    },
+    key: {
+      type: 'directional',
+      color: 0xfff1d6,
+      intensity: 1.5,
+      position: [2, 3, 4],
+      target: [0, 0, 0]
+    }
+  },
+  flashlight: {
+    color: 0xaabbbb,
+    enabled: false
+  }
+}
+  </code></pre>
+
+<!------------------------------------------------------------------------------------------------------------->
+
+    <h2>Default lights</h2>
+    <p>If <code>lighting</code> is omitted, or if <code>lighting.lights</code> is an empty collection, newHOP creates two named scene lights automatically. Their names are used by the runtime lighting APIs.</p>
+    <table><thead><tr><th>Name</th><th>Type</th><th>Default properties</th></tr></thead><tbody>
+      <tr><td><code>default-hemisphere</code></td><td>Hemisphere</td><td>Sky color <code>0xffffff</code>, ground color <code>0x444444</code>, intensity <code>1.2</code>, position <code>[0, 1, 0]</code></td></tr>
+      <tr><td><code>default-key</code></td><td>Directional</td><td>Color <code>0xffffff</code>, intensity <code>1.5</code>, position <code>[2, 3, 4]</code>, target <code>[0, 0, 0]</code></td></tr>
+    </tbody></table>
+    <p>As soon as you provide one or more entries in <code>lighting.lights</code>, those entries replace the default collection. Include every scene light you want to keep. Specifying only <code>lighting.flashlight</code> does not replace the defaults; the flashlight is managed separately.</p>
+    <pre><code>
+lighting: {
+  lights: {
+    // The default lights are replaced; declare all desired scene lights here.
+    key: { type: 'directional', position: [500, 900, 700], intensity: 2 }
+  },
+  flashlight: { enabled: true }
+}
+    </code></pre>
+
+<!------------------------------------------------------------------------------------------------------------->
+
+    <h2>Lights management at runtime</h2>
+
+    <p>At runtime, <code>presenter.getSceneLightsIDs()</code> returns a list of all lights of the scene. Flashlight is not in this list, as is managed separately.</p>
+    <pre><code>
+const sceneLights = presenter.lighting.getSceneLights();
+console.log(sceneLights);
+    </code></pre>
+
+    <p>At runtime, existing lights can be removed from the scene or new lights can be added.</p>
+    <pre><code>
+// removing a specific light from the scene
+presenter.lighting.removeSceneLight('Sun');
+
+// adding a new light to the scene
+presenter.lighting.addSceneLight('newSun', {
+  type: 'directional',
+  color: 0xffffff,
+  intensity: 1,
+  position: [1, 2, 3]
+});
+    </code></pre>  
+
+    <p>At runtime, it is possible to query the status of each light (The structure is a copy; changing that local object does not change the scene). It is also possible to update a specific light's parameters using the same structure used in its creation. And a shorthand method exists to change only the on/off state of a specific light.</p>
+    <pre><code>
+// querying the state of a specific light
+const fillLight = presenter.lighting.getSceneLight('fill');
+console.log(fillLight);
+
+// updating a specific light at runtime
+presenter.lighting.setSceneLight('fill', {
+  type: 'hemisphere',
+  enabled: true,
+  intensity: 3.14,
+  color: 0xff00ff,
+  groundColor: 0x333333,
+  position: [0, 1, 0]
+});
+
+// changing only the on/off state of a specific light
+presenter.lighting.setSceneLightEnabled('fill', false);
+    </code></pre>  
+
+<!------------------------------------------------------------------------------------------------------------->
+
+    <h2>Basic light types</h2>
+    <h3><code>ambient</code></h3>
+    <p>Applies uniform illumination without direction. It has no useful position, target, rotation, or distance. Ambient and hemisphere lights are mutually exclusive in one scene-light collection.</p>
+    <pre><code>lights: {
+  ambientFill: {
+    type: 'ambient',
+    enabled: true,
+    color: 0xffffff,
+    intensity: 0.65
+  }
+}</code></pre>
+    <table><thead><tr><th>Parameter</th><th>Meaning</th><th>Default</th></tr></thead><tbody>
+      <tr><td><code>type</code></td><td>Must be <code>'ambient'</code>.</td><td>Required</td></tr>
+      <tr><td><code>enabled</code></td><td>Whether the light contributes illumination.</td><td><code>true</code></td></tr>
+      <tr><td><code>color</code></td><td>Uniform light color as a hexadecimal number.</td><td><code>0xffffff</code></td></tr>
+      <tr><td><code>intensity</code></td><td>Uniform light intensity.</td><td><code>1</code></td></tr>
+    </tbody></table>
+    <p class="note">WARNING: there should only be only one ambient OR one hemisphere light in a scene-light collection.</p>
+
+
+    <h3><code>hemisphere</code></h3>
+    <p>Uses two colors: <code>color</code> for the sky-facing direction and <code>groundColor</code> for the opposite direction. Surface normals between those directions receive a blend. The light position determines the sky direction.</p>
+    <pre><code>
+lights: {
+  skyFill: {
+    type: 'hemisphere',
+    enabled: true,
+    color: 0x8899cc,
+    groundColor: 0x443b32,
+    intensity: 1.2,
+    position: [0, 1, 0]
+  }
+}
+    </code></pre>
+    <table><thead><tr><th>Parameter</th><th>Meaning</th><th>Default</th></tr></thead><tbody>
+      <tr><td><code>type</code></td><td>Must be <code>'hemisphere'</code>.</td><td>Required</td></tr>
+      <tr><td><code>enabled</code></td><td>Whether the light contributes illumination.</td><td><code>true</code></td></tr>
+      <tr><td><code>color</code></td><td>Sky-facing color.</td><td><code>0xffffff</code></td></tr>
+      <tr><td><code>groundColor</code></td><td>Ground-facing color.</td><td><code>0x444444</code></td></tr>
+      <tr><td><code>intensity</code></td><td>Hemisphere light intensity.</td><td><code>1</code></td></tr>
+      <tr><td><code>position</code></td><td>Direction toward the sky color.</td><td><code>[0, 1, 0]</code></td></tr>
+    </tbody></table>
+    <p class="note">WARNING: a hemisphere light needs a meaningful position. Its position establishes the sky direction. For the default Y-up convention, <code>[0, 1, 0]</code> points the sky upward. For a Z-up scene, use a position such as <code>[0, 0, 1]</code> when that matches the authored world. This direction is authored explicitly; it is not inferred from navigation.</p> 
+    <p class="note">WARNING: there should only be only one ambient OR one hemisphere light in a scene-light collection.</p>
+
+
+    <h3><code>directional</code></h3>
+    <p>Provides parallel light rays. Use <code>position</code> and <code>target</code> to define the direction. The target is a world-space point and is useful for aiming the light at a building or scene center.</p>
+    <pre><code>
+lights: {
+  sun: {
+    type: 'directional',
+    enabled: true,
+    color: 0xfff1d6,
+    intensity: 2,
+    position: [500, 900, 700],
+    target: [0, 100, 0],
+    rotation: [0, 0, 0],
+    castShadow: true
+  }
+}
+    </code></pre>
+    <table><thead><tr><th>Parameter</th><th>Meaning</th><th>Default</th></tr></thead><tbody>
+      <tr><td><code>type</code></td><td>Must be <code>'directional'</code>.</td><td>Required</td></tr>
+      <tr><td><code>enabled</code></td><td>Whether the light contributes illumination.</td><td><code>true</code></td></tr>
+      <tr><td><code>color</code></td><td>Parallel ray color.</td><td><code>0xffffff</code></td></tr>
+      <tr><td><code>intensity</code></td><td>Directional light intensity.</td><td><code>1</code></td></tr>
+      <tr><td><code>position</code></td><td>Light source position used with the target.</td><td><code>[0, 0, 0]</code></td></tr>
+      <tr><td><code>target</code></td><td>World-space point toward which the light points.</td><td>Three.js target origin</td></tr>
+      <tr><td><code>rotation</code></td><td>Euler rotation in X, Y, Z order, in degrees.</td><td><code>[0, 0, 0]</code></td></tr>
+      <tr><td><code>castShadow</code></td><td>Enables directional shadow casting.</td><td><code>false</code></td></tr>
+    </tbody></table>
+
+    <h2>Advanced light types</h2>
+    <p class="note">WARNING: These light types provide more control over illumination and are suitable for specific effects in a scene, but they may require more careful setup and tuning of parameters that heavily depends on the scene scale, size and material properties.</p>
+
+    <h3><code>point</code></h3>
+    <p>Emits light from a point in all directions. Its falloff is controlled by distance and decay, so large scenes may require appropriately scaled intensity and range.</p>
+    <pre><code>
+  lights: {
+  lamp: {
+    type: 'point',
+    enabled: true,
+    color: 0x7dd3fc,
+    intensity: 250000,
+    position: [-500, 450, 350],
+    distance: 1800,
+    decay: 2,
+    castShadow: true
+  }
+}
+    </code></pre>
+    <table><thead><tr><th>Parameter</th><th>Meaning</th><th>Default</th></tr></thead><tbody>
+      <tr><td><code>type</code></td><td>Must be <code>'point'</code>.</td><td>Required</td></tr>
+      <tr><td><code>enabled</code></td><td>Whether the light contributes illumination.</td><td><code>true</code></td></tr>
+      <tr><td><code>color</code></td><td>Point-light color.</td><td><code>0xffffff</code></td></tr>
+      <tr><td><code>intensity</code></td><td>Point-light intensity.</td><td><code>1</code></td></tr>
+      <tr><td><code>position</code></td><td>Point-light source position.</td><td><code>[0, 0, 0]</code></td></tr>
+      <tr><td><code>distance</code></td><td>Maximum range; zero means unlimited in Three.js.</td><td><code>10</code></td></tr>
+      <tr><td><code>decay</code></td><td>Light falloff factor.</td><td><code>2</code></td></tr>
+      <tr><td><code>rotation</code></td><td>Accepted for the scene definition but has no visual effect on an omnidirectional point light.</td><td><code>[0, 0, 0]</code></td></tr>
+      <tr><td><code>castShadow</code></td><td>Enables point-light shadow casting.</td><td><code>false</code></td></tr>
+    </tbody></table>
+
+    <h3><code>spot</code></h3>
+    <p>Emits a cone of light from a position toward a target.</p>
+    <pre><code>
+lights: {
+  accent: {
+    type: 'spot',
+    enabled: true,
+    color: 0x558855,
+    intensity: 120000,
+    position: [250, 700, -500],
+    target: [0, 100, 0],
+    distance: 1800,
+    angle: 32,
+    penumbra: 0.45,
+    decay: 1.5,
+    castShadow: true
+  }
+}
+    </code></pre>
+    <table><thead><tr><th>Parameter</th><th>Meaning</th><th>Default</th></tr></thead><tbody>
+      <tr><td><code>type</code></td><td>Must be <code>'spot'</code>.</td><td>Required</td></tr>
+      <tr><td><code>enabled</code></td><td>Whether the light contributes illumination.</td><td><code>true</code></td></tr>
+      <tr><td><code>color</code></td><td>Spotlight color.</td><td><code>0xffffff</code></td></tr>
+      <tr><td><code>intensity</code></td><td>Spotlight intensity.</td><td><code>1</code></td></tr>
+      <tr><td><code>position</code></td><td>Spot source position.</td><td><code>[0, 0, 0]</code></td></tr>
+      <tr><td><code>target</code></td><td>World-space point at the center of the cone.</td><td>Three.js target origin</td></tr>
+      <tr><td><code>distance</code></td><td>Maximum cone range.</td><td><code>10</code></td></tr>
+      <tr><td><code>angle</code></td><td>Maximum cone angle.</td><td><code>30</code> degrees</td></tr>
+      <tr><td><code>penumbra</code></td><td>Edge softness from zero to one.</td><td><code>0.5</code></td></tr>
+      <tr><td><code>decay</code></td><td>Light falloff factor.</td><td><code>2</code></td></tr>
+      <tr><td><code>rotation</code></td><td>Euler rotation in X, Y, Z order, in degrees.</td><td><code>[0, 0, 0]</code></td></tr>
+      <tr><td><code>castShadow</code></td><td>Enables spotlight shadow casting.</td><td><code>false</code></td></tr>
+    </tbody></table>
+
+<!------------------------------------------------------------------------------------------------------------->
+
+    <h2>Flashlight</h2>
+    <p>The flashlight is a camera-mounted Three.js directional light. It follows the camera, keeps a constant intensity across distance, and can be changed through the public lighting manager. Its orientation is expressed in camera-local coordinates, so zero orientation always follows the camera's current view in both Y-up and Z-up scenes.</p>
+    <pre><code>
+lighting: {
+  flashlight: {
+    enabled: true,
+    color: 0xffb36b,
+    intensity: 1,
+    azimuth: 0,
+    elevation: 0
+  }
+}
+    </code></pre>
+    <table><thead><tr><th>Parameter</th><th>Meaning</th><th>Default</th></tr></thead><tbody>
+      <tr><td><code>enabled</code></td><td>Whether the flashlight contributes light.</td><td><code>false</code></td></tr>
+      <tr><td><code>color</code></td><td>Flashlight color.</td><td><code>0xffffff</code></td></tr>
+      <tr><td><code>intensity</code></td><td>Flashlight intensity.</td><td><code>1</code></td></tr>
+      <tr><td><code>azimuth</code></td><td>Horizontal direction angle in degrees within the camera view. Zero points along the camera's current forward direction.</td><td><code>0</code></td></tr>
+      <tr><td><code>elevation</code></td><td>Angle in degrees above or below the camera's current forward direction.</td><td><code>0</code></td></tr>
+    </tbody></table>
+    <pre><code>presenter.lighting.setFlashlight({
+  enabled: true,
+  color: 0xffb36b,
+  intensity: 3,
+  azimuth: 0,
+  elevation: 0
+});
+
+presenter.lighting.toggleFlashlight();</code></pre>
+  <p>Enable flashlight aiming to temporarily give the left mouse drag to the light instead of navigation. The light remains camera-mounted, and its orientation is limited to the configured angle range. Dragging changes the camera-relative azimuth and elevation; the same control behavior applies in Y-up and Z-up scenes:</p>
+  <pre><code>presenter.setFlashlightMode(true);
+// left-button drag changes azimuth and elevation
+presenter.setFlashlightMode(false);
+
+const orientation = presenter.lighting.getFlashlightOrientation();
+presenter.lighting.setFlashlightOrientation(20, -10);</code></pre>
+
+    <h2>Runtime scene-light controls</h2>
+    <p>Set <code>enabled: false</code> in any scene-light definition to start that light disabled. The default is <code>true</code>. Named lights use the key from <code>lighting.lights</code>. Runtime setters use the same definition shape as scene creation:</p>
+    <pre><code>presenter.lighting.setSceneLightEnabled('key', false);
+const enabled = presenter.lighting.isSceneLightEnabled('key');
+const ids = presenter.getSceneLightIds();
+
+const keyLight = presenter.lighting.getSceneLight('key');
+presenter.lighting.setSceneLight('key', {
+  type: 'directional',
+  enabled: true,
+  color: 0xfff1d6,
+  intensity: 2.5,
+  position: [500, 900, 700],
+  target: [0, 100, 0],
+  castShadow: true
+});
+
+const flashlight = presenter.lighting.getFlashlight();
+presenter.lighting.setFlashlight({ ...flashlight, enabled: true });</code></pre>
+    <p>Scene lights also have explicit creation and destruction methods:</p>
+    <pre><code>presenter.lighting.addSceneLight('rim', {
+  type: 'point',
+  color: 0x7dd3fc,
+  intensity: 250000,
+  position: [-500, 450, 350],
+  distance: 1800,
+  decay: 2
+});
+presenter.lighting.removeSceneLight('rim');</code></pre>
+  </main>
+</body>
+</html>

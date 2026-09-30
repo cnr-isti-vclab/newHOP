@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>newHOP documentation</title>
+  <style>
+    :root { color-scheme: dark; --bg: #0b1120; --panel: #111827; --panel-2: #1f2937; --text: #e5e7eb; --muted: #9ca3af; --accent: #7dd3fc; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; background: linear-gradient(145deg, #0b1120, #172033); color: var(--text); font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    main { width: min(960px, calc(100vw - 32px)); margin: 0 auto; padding: 64px 0; }
+    h1 { margin: 0 0 12px; font-size: clamp(2rem, 5vw, 3.6rem); }
+    .intro { max-width: 680px; color: var(--muted); font-size: 1.05rem; line-height: 1.6; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-top: 36px; }
+    .card { display: block; padding: 22px; border: 1px solid rgba(125, 211, 252, 0.28); border-radius: 10px; background: rgba(17, 24, 39, 0.88); color: var(--text); text-decoration: none; }
+    .card:hover { border-color: var(--accent); transform: translateY(-2px); }
+    .card h2 { margin: 0 0 8px; font-size: 1.25rem; }
+    .card p { margin: 0; color: var(--muted); line-height: 1.5; }
+    nav { margin-top: 28px; }
+    nav a { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>newHOP documentation</h1>
+    <p class="intro">Reference pages for scene authoring, runtime control, and the TypeScript library. The documentation is plain HTML so it can be served, published, or copied with the rest of a project.</p>
+    <div class="grid">
+      <a class="card" href="objects.html">
+        <h2>Objects</h2>
+        <p>Load models and define supplied geometry, transforms, material sidecars, visual settings, tags, and runtime entity control.</p>
+      </a>
+      <a class="card" href="../examples/animation.html">
+        <h2>Animation example</h2>
+        <p>Discover named GLB clips, play them with loop modes, and scrub animation time.</p>
+      </a>
+      <a class="card" href="../examples/splats.html">
+        <h2>Gaussian splat example</h2>
+        <p>Load a PLY Gaussian splat as an object with shared transforms and scene navigation.</p>
+      </a>
+      <a class="card" href="spots.html">
+        <h2>Spots</h2>
+        <p>Author primitive or custom hotspots, configure transforms and highlighting, and control them at runtime.</p>
+      </a>
+      <a class="card" href="navigation.html">
+        <h2>Navigation and Trackball</h2>
+        <p>Configure turntable navigation, initial views, limits, panning, animation, input locking, and runtime status.</p>
+      </a>
+      <a class="card" href="illumination.html">
+        <h2>Illumination</h2>
+        <p>Configure illumination, declaring light sources and runtime toggles.</p>
+      </a>
+    </div>
+    <nav><a href="../index.html">Back to examples</a></nav>
+  </main>
+</body>
+</html>

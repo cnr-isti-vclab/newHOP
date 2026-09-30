@@ -1,0 +1,378 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>newHOP advanced example</title>
+  <style>
+    html, body, #viewer { width: 100%; height: 100%; margin: 0; }
+    body { overflow: hidden; background: #101316; color: #e5e7eb; font-family: sans-serif; }
+    #viewer { position: relative; }
+    .hud {
+      position: absolute;
+      left: 16px;
+      top: 16px;
+      z-index: 20;
+      background: rgba(17, 24, 39, 0.7);
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 12px;
+      letter-spacing: 0.02em;
+      backdrop-filter: blur(4px);
+    }
+    .hud-actions { display: flex; gap: 6px; margin-top: 8px; }
+    .hud-actions button {
+      border: 1px solid rgba(148, 163, 184, 0.45);
+      border-radius: 5px;
+      padding: 5px 8px;
+      background: rgba(30, 41, 59, 0.9);
+      color: inherit;
+      cursor: pointer;
+      font: inherit;
+    }
+    .appearance-panel {
+      position: absolute;
+      right: 16px;
+      top: 16px;
+      z-index: 20;
+      width: min(260px, calc(100vw - 32px));
+      max-height: calc(100vh - 32px);
+      overflow: auto;
+      box-sizing: border-box;
+      padding: 12px;
+      background: rgba(17, 24, 39, 0.82);
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      border-radius: 10px;
+      backdrop-filter: blur(4px);
+      font-size: 12px;
+    }
+    .appearance-panel h2 {
+      margin: 0 0 4px;
+      font-size: 13px;
+    }
+    .appearance-panel p {
+      margin: 0 0 10px;
+      color: #94a3b8;
+      line-height: 1.35;
+    }
+    .appearance-model {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(148, 163, 184, 0.2);
+    }
+    .appearance-model h3 {
+      margin: 0 0 6px;
+      font-size: 12px;
+      color: #f8fafc;
+    }
+    .appearance-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      min-height: 24px;
+    }
+    .appearance-row label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: #cbd5e1;
+    }
+    .appearance-row input[type="color"] {
+      width: 28px;
+      height: 20px;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      cursor: pointer;
+    }
+    .appearance-row input[type="range"] { width: 100px; }
+    .appearance-value { color: #94a3b8; min-width: 34px; text-align: right; }
+    .animation-controls { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .animation-controls button,
+    .animation-controls select {
+      border: 1px solid rgba(148, 163, 184, 0.45);
+      border-radius: 5px;
+      padding: 5px 7px;
+      background: rgba(30, 41, 59, 0.9);
+      color: inherit;
+      cursor: pointer;
+      font: inherit;
+    }
+  </style>
+</head>
+<body>
+  <div id="viewer">
+    <div class="hud">
+      <div>Multiple models + transforms + built-in toolbar</div>
+    </div>
+    <aside class="appearance-panel" id="appearance-panel">
+      <h2>Model appearance</h2>
+      <p>Toggle reversible material modifiers for each model.</p>
+      <div>Loading models...</div>
+    </aside>
+  </div>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { Presenter, Toolbar } from '../src/index.ts';
+
+    const presenter = new Presenter({ mount: 'viewer' });
+    const toolbar = new Toolbar(presenter, {
+      position: 'bottom-center',
+      buttons: ['home', 'fit', 'zoomIn', 'zoomOut', 'measure', 'section', 'fullscreen']
+    });
+
+    presenter.measurement.setOnComplete((result) => {
+      console.log('Measurement: ' + result.distance.toFixed(3));
+    });
+
+    presenter.picking.setOnPick((result) => {
+      console.log('Picked point:', result.point.toArray());
+    });
+
+    presenter.setScene({
+      world: {
+        background: 0x665544,
+        camera: { fov: 42 }
+      },
+      navigation: {
+        type: 'turntable',
+        upAxis: 'y',
+        limits: {
+          azimuth: [-180, 180],
+          elevation: [-90, 90],
+          distance: [500, 2500],
+          pan: {
+            x: [-500, 500],
+            y: [-500, 500],
+            z: [-500, 500]
+          }
+        },
+        homeView: {
+          target: [0, 50, 0],
+          azimuth: -45,
+          elevation: 15,
+          distance: 2000
+        }
+      },
+      helpers: {
+        origin: { type: 'axes', size: 300, color: 0xa5b4fc },
+        floor: { type: 'grid', size: 10, spacing: 1.0, color: 0x7dd3fc, opacity: 0.7 },
+        extent: { type: 'sceneextent'}
+      },
+      objects: {
+        laurana: {
+          file: 'models/laurana.ply',
+          position: [0, 0, 0],
+          scale: 1,
+          color: 0x99f388,
+          visible: true,          
+          tags: ['main']
+        },
+        gargo: {
+          file: 'models/gargo.nxz',
+          material: {
+            roughness: 0.72,
+            metalness: 0,
+            specularColor: 0xffffff,
+            shininess: 30
+          },
+          position: [0, 300.0, -100],
+          rotation: [0, 45, 0],
+          scale: [2, 2, 2],
+          color: 0xa551111,
+          visible: true, 
+          tags: ['secondary']
+        },
+        zucca: {
+          file: 'models/pumpkin.glb',
+          position: [200, 300.0, 100],
+          rotation: [0, 0.0, 0],
+          scale: [1, 1, 1],
+          color: 0xa5d8ff,
+          visible: true,
+          tags: ['secondary']
+        },
+        stein: {
+          file: 'models/stein.ply',
+          position: [350, -230.0, 0],
+          rotation: [0, 0.0, 0],
+          scale: [1, 1, 1],
+          visible: true,
+          color: 0xff4466,
+          tags: ['secondary']
+        },        
+        marker: {
+          geometry: new THREE.BoxGeometry(0.25, 0.25, 0.25),
+          material: new THREE.MeshStandardMaterial({ color: 0xffc857, emissive: 0x332200 }),
+          position: [100.0, 100.0, 100.0],
+          rotation: [17, 40, 6],
+          scale: [77, 99, 111],
+          tags: ['annotation']
+        }
+      },
+      spots: {
+        hotspotA: {
+          primitive: 'sphere',
+          size: 50.0,
+          position: [-300.0, 0.0, 200.0],
+          color: 0xff4d6d,
+          alpha: 0.4
+        },
+        hotspotB: {
+          primitive: 'cube',
+          size: 50.0,
+          position: [100.0, 0.0, 200.0],
+          color: 0x4ade80,
+          alpha: 0.3
+        }
+      }
+    });
+
+    const appearancePanel = document.getElementById('appearance-panel');
+    const appearanceModels = [
+      ['laurana', 'Laurana'],
+      ['gargo', 'Gargo'],
+      ['zucca', 'Pumpkin'],
+      ['stein', 'Stein']
+    ];
+    const checkboxProperties = ['visible', 'uniform', 'transparent', 'shadeless', 'doubleSided'];
+
+    function colorHex(value) {
+      return '#' + (value ?? 0xffffff).toString(16).padStart(6, '0').slice(-6);
+    }
+
+    function addAppearanceControl(container, id, appearance, property) {
+      const row = document.createElement('div');
+      row.className = 'appearance-row';
+      const label = document.createElement('label');
+      const input = document.createElement('input');
+      input.type = 'checkbox';
+      input.checked = appearance[property] ?? false;
+      input.addEventListener('change', () => presenter.setObjectAppearance(id, { [property]: input.checked }));
+      label.append(input, property);
+      row.append(label);
+      container.append(row);
+    }
+
+    function buildAppearancePanel() {
+      appearancePanel.innerHTML = '<h2>Model appearance</h2><p>Toggle reversible material modifiers for each model.</p>';
+      for (const [id, labelText] of appearanceModels) {
+        const appearance = presenter.getObjectAppearance(id);
+        const section = document.createElement('section');
+        section.className = 'appearance-model';
+        section.innerHTML = `<h3>${labelText}</h3>`;
+        for (const property of checkboxProperties) {
+          addAppearanceControl(section, id, appearance, property);
+        }
+
+        const colorRow = document.createElement('div');
+        colorRow.className = 'appearance-row';
+        colorRow.innerHTML = '<label>color</label>';
+        const colorInput = document.createElement('input');
+        colorInput.type = 'color';
+        colorInput.value = colorHex(appearance.color);
+        colorInput.addEventListener('input', () => {
+          presenter.setObjectAppearance(id, { color: Number.parseInt(colorInput.value.slice(1), 16) });
+        });
+        colorRow.append(colorInput);
+        section.append(colorRow);
+
+        const alphaRow = document.createElement('div');
+        alphaRow.className = 'appearance-row';
+        alphaRow.innerHTML = '<label>alpha</label>';
+        const alphaInput = document.createElement('input');
+        alphaInput.type = 'range';
+        alphaInput.min = '0';
+        alphaInput.max = '1';
+        alphaInput.step = '0.05';
+        alphaInput.value = String(appearance.alpha ?? 1);
+        const alphaValue = document.createElement('span');
+        alphaValue.className = 'appearance-value';
+        alphaValue.textContent = Number(alphaInput.value).toFixed(2);
+        alphaInput.addEventListener('input', () => {
+          alphaValue.textContent = Number(alphaInput.value).toFixed(2);
+          presenter.setObjectAppearance(id, { alpha: Number(alphaInput.value) });
+        });
+        alphaRow.append(alphaInput, alphaValue);
+        section.append(alphaRow);
+        appearancePanel.append(section);
+      }
+      buildAnimationControls();
+    }
+
+    function buildAnimationControls() {
+      const clips = presenter.getObjectAnimations('animated');
+      const section = document.createElement('section');
+      section.className = 'appearance-model';
+      section.innerHTML = '<h3>Animated GLB</h3>';
+      if (clips.length === 0) {
+        section.append('No animations available.');
+        appearancePanel.append(section);
+        return;
+      }
+
+      const clip = clips[0];
+      const select = document.createElement('select');
+      for (const item of clips) {
+        const option = document.createElement('option');
+        option.value = item.name;
+        option.textContent = `${item.name} (${item.duration.toFixed(2)}s)`;
+        select.append(option);
+      }
+
+      const mode = document.createElement('select');
+      for (const value of ['loop', 'once', 'pingpong']) {
+        const option = document.createElement('option');
+        option.value = value;
+        option.textContent = value;
+        mode.append(option);
+      }
+
+      const controls = document.createElement('div');
+      controls.className = 'animation-controls';
+      const addButton = (label, onClick) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.textContent = label;
+        button.addEventListener('click', onClick);
+        controls.append(button);
+      };
+      addButton('Play', () => presenter.playObjectAnimation('animated', select.value, { mode: mode.value }));
+      addButton('Pause', () => presenter.pauseObjectAnimation('animated'));
+      addButton('Stop', () => presenter.stopObjectAnimation('animated'));
+
+      const scrub = document.createElement('input');
+      scrub.type = 'range';
+      scrub.min = '0';
+      scrub.max = String(clip.duration);
+      scrub.step = '0.01';
+      scrub.value = '0';
+      scrub.addEventListener('input', () => presenter.setObjectAnimationTime('animated', select.value, Number(scrub.value)));
+      select.addEventListener('change', () => {
+        const selected = clips.find((item) => item.name === select.value) ?? clip;
+        scrub.max = String(selected.duration);
+        scrub.value = '0';
+        presenter.setObjectAnimationTime('animated', selected.name, 0);
+      });
+      section.append(select, mode, controls, scrub);
+      appearancePanel.append(section);
+    }
+
+    presenter.onSceneReady(buildAppearancePanel);
+
+    presenter.setPickingMode(true);
+    presenter.setMeasurementMode(false);
+    presenter.setClipPlane('z', 0.0, false);
+
+    window.addEventListener('keydown', (event) => {
+      if (event.key === 'm') presenter.setMeasurementMode(!presenter.measurement.isEnabled());
+      if (event.key === 'p') presenter.setPickingMode(!presenter.picking.isEnabled());
+      if (event.key === 'c') presenter.clipping.toggle();
+      if (event.key === 'f') presenter.fitToScene();
+    });
+  </script>
+</body>
+</html>

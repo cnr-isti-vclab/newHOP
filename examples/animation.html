@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>newHOP animation example</title>
+  <style>
+    html, body, #viewer { width: 100%; height: 100%; margin: 0; }
+    body { overflow: hidden; background: #111827; color: #e5e7eb; font-family: sans-serif; }
+    #viewer { position: relative; }
+    .panel {
+      position: absolute;
+      left: 16px;
+      top: 16px;
+      z-index: 10;
+      width: min(320px, calc(100vw - 32px));
+      box-sizing: border-box;
+      padding: 16px;
+      background: rgba(17, 24, 39, 0.88);
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      border-radius: 10px;
+      backdrop-filter: blur(5px);
+    }
+    h1 { margin: 0 0 4px; font-size: 18px; }
+    p { margin: 0 0 14px; color: #94a3b8; font-size: 13px; line-height: 1.4; }
+    .row { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+    label { flex: 1; color: #cbd5e1; font-size: 13px; }
+    select, button {
+      border: 1px solid rgba(148, 163, 184, 0.45);
+      border-radius: 5px;
+      padding: 6px 8px;
+      background: #1e293b;
+      color: inherit;
+      font: inherit;
+    }
+    button { cursor: pointer; }
+    .buttons { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
+    input[type="range"] { width: 100%; }
+    #status { min-height: 18px; margin-top: 12px; color: #93c5fd; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div id="viewer">
+    <section class="panel">
+      <h1>Animated GLB</h1>
+      <p>Named clip playback and time-based scrubbing.</p>
+      <div class="row">
+        <label for="clip">Animation</label>
+        <select id="clip"></select>
+      </div>
+      <div class="row">
+        <label for="mode">Playback</label>
+        <select id="mode">
+          <option value="loop">Loop</option>
+          <option value="once">Once</option>
+          <option value="pingpong">Pingpong</option>
+        </select>
+      </div>
+      <div class="buttons">
+        <button id="play" type="button">Play</button>
+        <button id="pause" type="button">Pause</button>
+        <button id="stop" type="button">Stop</button>
+      </div>
+      <div class="row">
+        <label for="time">Time</label>
+        <output id="time-value">0.00s</output>
+      </div>
+      <input id="time" type="range" min="0" max="1" step="0.01" value="0">
+      <div id="status">Loading animation clips...</div>
+    </section>
+  </div>
+
+  <script type="module">
+    import { Presenter, Toolbar } from '../src/index.ts';
+
+    const presenter = new Presenter({ mount: 'viewer' });
+    new Toolbar(presenter, {
+      position: 'bottom-center',
+      buttons: ['home', 'fit', 'zoomIn', 'zoomOut', 'fullscreen']
+    });
+
+    const clipSelect = document.getElementById('clip');
+    const modeSelect = document.getElementById('mode');
+    const timeInput = document.getElementById('time');
+    const timeValue = document.getElementById('time-value');
+    const status = document.getElementById('status');
+
+    await presenter.setScene({
+      world: {
+        background: 0x202b3c,
+        camera: { fov: 40 }
+      },
+      navigation: {
+        type: 'turntable',
+        upAxis: 'y',
+        homeView: { target: [0, 0, 0], azimuth: 35, elevation: 18, distance: 4 }
+      },
+      objects: {
+        animated: {
+          file: 'models/test_shapek.glb',
+          animation: {
+            clip: 'CubeAction',
+            autoplay: true,
+            mode: 'loop'
+          }
+        }
+      }
+    });
+
+    const clips = presenter.getObjectAnimations('animated');
+    for (const clip of clips) {
+      const option = document.createElement('option');
+      option.value = clip.name;
+      option.textContent = `${clip.name} (${clip.duration.toFixed(2)}s)`;
+      clipSelect.append(option);
+    }
+
+    if (clips.length > 0) {
+      timeInput.max = String(clips[0].duration);
+      status.textContent = `${clips.length} animation${clips.length === 1 ? '' : 's'} available`;
+    } else {
+      status.textContent = 'No animations found';
+    }
+
+    function selectedClip() {
+      return clips.find((clip) => clip.name === clipSelect.value) ?? clips[0];
+    }
+
+    document.getElementById('play').addEventListener('click', () => {
+      if (!selectedClip()) return;
+      presenter.playObjectAnimation('animated', selectedClip().name, { mode: modeSelect.value });
+      status.textContent = `Playing ${selectedClip().name}`;
+    });
+
+    document.getElementById('pause').addEventListener('click', () => {
+      presenter.pauseObjectAnimation('animated');
+      status.textContent = 'Paused';
+    });
+
+    document.getElementById('stop').addEventListener('click', () => {
+      presenter.stopObjectAnimation('animated');
+      timeInput.value = '0';
+      timeValue.value = '0.00s';
+      status.textContent = 'Stopped';
+    });
+
+    clipSelect.addEventListener('change', () => {
+      const clip = selectedClip();
+      if (!clip) return;
+      timeInput.max = String(clip.duration);
+      timeInput.value = '0';
+      timeValue.value = '0.00s';
+      presenter.setObjectAnimationTime('animated', clip.name, 0);
+    });
+
+    timeInput.addEventListener('input', () => {
+      const clip = selectedClip();
+      if (!clip) return;
+      const time = Number(timeInput.value);
+      timeValue.value = `${time.toFixed(2)}s`;
+      presenter.setObjectAnimationTime('animated', clip.name, time);
+    });
+  </script>
+</body>
+</html>

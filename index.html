@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>newHOP examples</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0f172a;
+      --panel: #111827;
+      --panel-2: #1f2937;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --accent: #60a5fa;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: linear-gradient(180deg, #0b1120 0%, #111827 100%);
+      color: var(--text);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      display: grid;
+      place-items: center;
+    }
+    .wrap {
+      width: min(900px, calc(100vw - 32px));
+      background: rgba(17, 24, 39, 0.92);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      border-radius: 18px;
+      padding: 28px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.25);
+    }
+    h1 {
+      margin: 0 0 12px;
+      font-size: clamp(2rem, 4vw, 2.8rem);
+    }
+    p {
+      margin: 0 0 20px;
+      color: var(--muted);
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+    }
+    .card {
+      display: block;
+      text-decoration: none;
+      color: var(--text);
+      background: linear-gradient(180deg, rgba(31, 41, 55, 1), rgba(17, 24, 39, 1));
+      border: 1px solid rgba(96, 165, 250, 0.28);
+      border-radius: 12px;
+      padding: 18px 16px;
+      transition: transform 0.15s ease, border-color 0.15s ease;
+    }
+    .card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(96, 165, 250, 0.8);
+    }
+    .name {
+      display: block;
+      font-weight: 700;
+      font-size: 1.05rem;
+      margin-bottom: 6px;
+    }
+    .meta {
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>newHOP examples</h1>
+    <p>Select a sample page to open it in the browser.</p>
+    <div class="grid">
+      <a class="card" href="/examples/minimal.html">
+        <span class="name">minimal</span>
+        <span class="meta">Baseline scene + toolbar + basic interactions</span>
+      </a>
+      <a class="card" href="/examples/advanced.html">
+        <span class="name">advanced</span>
+        <span class="meta">Multiple models, transforms, tooling, and clipping</span>
+      </a>
+      <a class="card" href="/examples/transforms.html">
+        <span class="name">transforms</span>
+        <span class="meta">Runtime get/set transform and matrix mode tests</span>
+      </a>
+      <a class="card" href="/examples/z-up.html">
+        <span class="name">Z-up survey scene</span>
+        <span class="meta">Two Nexus models with Z-axis navigation and ground grid</span>
+      </a>
+      <a class="card" href="/examples/lighting.html">
+        <span class="name">lighting</span>
+        <span class="meta">Scene lights and a runtime camera flashlight with Laurana and gargoyle</span>
+      </a>
+      <a class="card" href="/examples/turntable.html">
+        <span class="name">turntable</span>
+        <span class="meta">Runtime viewpoint animation, limits, and navigation locking</span>
+      </a>
+      <a class="card" href="/examples/splats.html">
+        <span class="name">Gaussian splat</span>
+        <span class="meta">Load well_splat.ply as an object with shared transforms and navigation</span>
+      </a>
+    </div>
+  </div>
+  <div class="wrap">
+    <h1>newHOP documentation</h1>
+    <p>Reference pages for scene authoring, runtime control, and the TypeScript library. The documentation is plain HTML so it can be served, published, or copied with the rest of a project.</p>
+    <div class="grid">
+      <a class="card" href="/docs/index.html">
+        <span class="name">documentation</span>
+        <span class="meta">Scene blocks, navigation, runtime APIs, and authoring reference</span>
+      </a>
+      <a class="card" href="/docs/architecture.md">
+        <span class="name">Architecture</span>
+        <span class="meta">Understand the Presenter, managers, scene blocks, loaders, bundles, and runtime ownership.</span>
+      </a>
+      <a class="card" href="/docs/contributing.md">
+        <span class="name">Contributing</span>
+        <span class="meta">Set up the project, run checks, work with examples, and keep generated artifacts consistent.</span>
+      </a>
+      <a class="card" href="/docs/roadmap.md">
+        <span class="name">Roadmap</span>
+        <span class="meta">Track current capabilities, next priorities, and open design questions.</span>
+      </a>
+      <a class="card" href="/docs/desiderata.md">
+        <span class="name">Desiderata</span>
+        <span class="meta">Record desirable future capabilities and design ideas that are not yet implemented.</span>
+      </a>      
+    </div>
+  </div>  
+</body>
+</html>

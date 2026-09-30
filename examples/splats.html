@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>newHOP Gaussian splat example</title>
+  <style>
+    html, body, #viewer { width: 100%; height: 100%; margin: 0; }
+    body { overflow: hidden; background: #0b1020; color: #e5e7eb; font-family: sans-serif; }
+    #viewer { position: relative; }
+    .panel {
+      position: absolute;
+      left: 16px;
+      top: 16px;
+      z-index: 10;
+      width: min(300px, calc(100vw - 32px));
+      box-sizing: border-box;
+      padding: 16px;
+      background: rgba(15, 23, 42, 0.86);
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      border-radius: 10px;
+      backdrop-filter: blur(5px);
+    }
+    h1 { margin: 0 0 6px; font-size: 18px; }
+    p { margin: 0; color: #94a3b8; font-size: 13px; line-height: 1.4; }
+    #status { margin-top: 12px; color: #93c5fd; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div id="viewer">
+    <section class="panel">
+      <h1>Gaussian splat</h1>
+      <p>A PLY splat declared as an object with shared scene transforms and navigation.</p>
+      <div id="status">Loading splat...</div>
+    </section>
+  </div>
+
+  <script type="module">
+    import { Presenter, Toolbar } from '../src/index.ts';
+
+    const presenter = new Presenter({ mount: 'viewer', antialias: false });
+    new Toolbar(presenter, {
+      position: 'bottom-center',
+      buttons: ['home', 'fit', 'zoomIn', 'zoomOut', 'fullscreen']
+    });
+
+    await presenter.setScene({
+      world: {
+        background: 0x101827,
+        camera: { fov: 40 }
+      },
+      navigation: {
+        type: 'turntable',
+        upAxis: 'y',
+        homeView: { target: [0, 0, 0], azimuth: 35, elevation: 18, distance: 4 }
+      },
+      helpers: {
+        origin: { type: 'axes', size: 30, color: 0xa5b4fc },
+        floor: { type: 'grid', size: 50, spacing: 1.0, color: 0x7dd3fc, opacity: 0.7 },
+        extent: { type: 'sceneextent'}
+      },      
+      objects: {
+        well: {
+          type: 'splat',
+          file: 'large_assets/well_splat.ply',
+          rotation: [0, 0, 180],
+          scale: 1
+        },
+        laurana: {
+          file: 'models/laurana.ply',
+          position: [1.7, 0.4, 0.5],
+          rotation: [0, -35, 0],
+          scale: 0.002,
+          color: 0x99f388,
+          visible: true,          
+          tags: ['main']
+        },
+        gargoyle: {
+          file: 'models/gargo.nxz',
+          position: [-1.5, -0.05, 0.5],
+          rotation: [0, 0, 0],
+          scale: 0.006,
+          color: 0x99f388,
+          visible: true,          
+          tags: ['main']
+        },        
+      }
+    });
+
+    document.getElementById('status').textContent = 'Splat loaded';
+  </script>
+</body>
+</html>

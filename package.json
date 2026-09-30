@@ -1,0 +1,30 @@
+{
+  "name": "newhop",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "description": "A modern three.js framework for interactive 3D Heritage presentations",
+  "scripts": {
+    "build": "tsc --noEmit && npm run build:esm && npm run build:global && npm run build:minimal",
+    "build:esm": "vite build --mode esm",
+    "build:global": "vite build --mode global",
+    "build:minimal": "node scripts/build-minimal.mjs",
+    "dev": "vite",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@sparkjsdev/spark": "^2.2.0",
+    "nexus3d": "1.0.10",
+    "three": ">=0.160.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.4.1",
+    "@types/three": "^0.180.0",
+    "typescript": "^5.9.0",
+    "vite": "^7.1.0"
+  },
+  "peerDependencies": {
+    "three": ">=0.160.0"
+  }
+}

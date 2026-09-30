@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>newHOP spots</title>
+  <style>
+    :root { color-scheme: dark; --bg: #0b1120; --panel: #111827; --text: #e5e7eb; --muted: #aab4c3; --accent: #7dd3fc; --line: rgba(148, 163, 184, 0.24); }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: linear-gradient(145deg, #0b1120, #172033); color: var(--text); font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.6; }
+    main { width: min(980px, calc(100vw - 32px)); margin: 0 auto; padding: 44px 0 72px; }
+    nav { margin-bottom: 28px; } a { color: var(--accent); }
+    h1 { margin: 0 0 8px; font-size: clamp(2rem, 5vw, 3.2rem); } h2 { margin: 42px 0 12px; font-size: 1.55rem; } h3 { margin: 34px 0 10px; color: #fbbf24; font-size: 1.35rem; font-weight: 700; }
+    .lede { color: var(--muted); } pre { overflow-x: auto; margin: 14px 0 20px; padding: 16px; border: 1px solid var(--line); border-radius: 8px; background: #080d18; color: #dbeafe; }
+    code { font-family: Consolas, "Courier New", monospace; font-size: 0.92em; } table { width: 100%; border-collapse: collapse; margin: 12px 0 24px; background: rgba(17, 24, 39, 0.66); }
+    th, td { padding: 10px 12px; border: 1px solid var(--line); text-align: left; vertical-align: top; } th { color: var(--accent); font-weight: 600; }
+  </style>
+</head>
+<body>
+  <main>
+    <nav><a href="index.html">Documentation index</a> · <a href="../index.html">Examples</a></nav>
+    <h1>Spots</h1>
+    <p class="lede">The <code>spots</code> block defines named three-dimensional hotspots with a small, purpose-built configuration. They are separate from <code>objects</code> so interface annotations and pickable scene content remain distinct. Spot identifiers are unique within the <code>spots</code> block; an object may use the same identifier because objects have their own namespace.</p>
+
+    <h2>Spots Block Example</h2>
+    <h3>Built-in primitive</h3>
+    <pre><code>spots: {
+  hotspotA: {
+    primitive: 'sphere',
+    label: 'Feature A',
+    size: 50,
+    position: [-300, 0, 200],
+    rotation: [0, 0, 0],
+    scale: [1, 1, 1],
+    color: 0xff4d6d,
+    alpha: 0.7,
+    transparent: true,
+    doubleSided: true,
+    visible: true,
+    tags: ['annotation'],
+    clippable: false,
+    measurable: false,
+  },
+  hotspotB: {
+    primitive: 'cube',
+    size: 50,
+    position: [100, 0, 200],
+    color: 0x4ade80
+  }
+}</code></pre>
+
+    <h3>Custom geometry or model</h3>
+    <p>A spot can instead use supplied geometry or a custom PLY/OBJ file. The source replaces <code>primitive</code>, and custom sources remain unlit.</p>
+    <pre><code>spots: {
+  marker: {
+    file: 'models/marker.obj',
+    position: [10, 20, 30],
+    scale: 0.5,
+    color: 0xffc857
+  },
+  custom: {
+    geometry: new THREE.SphereGeometry(2, 24, 16),
+    position: [0, 0, 0]
+  }
+}</code></pre>
+
+    <h2>Spot Properties</h2>
+    <h3>Configuration</h3>
+    <table>
+      <thead><tr><th>Property</th><th>Meaning</th><th>Units</th><th>Default</th></tr></thead>
+      <tbody>
+        <tr><td><code>primitive</code></td><td>Built-in hotspot form: <code>sphere</code> or <code>cube</code>.</td><td>Identifier</td><td>Required unless <code>file</code> or <code>geometry</code> is supplied</td></tr>
+        <tr><td><code>file</code></td><td>Custom PLY or OBJ hotspot source. The loaded materials are converted to unlit spot materials.</td><td>URL</td><td>None</td></tr>
+        <tr><td><code>geometry</code></td><td>Custom Three.js buffer geometry for the hotspot.</td><td>BufferGeometry</td><td>None</td></tr>
+        <tr><td><code>size</code></td><td>Sphere diameter or cube side length.</td><td>Scene units</td><td><code>0.06</code></td></tr>
+        <tr><td><code>position</code></td><td>Spot translation.</td><td>Scene units</td><td><code>[0, 0, 0]</code></td></tr>
+        <tr><td><code>rotation</code></td><td>Spot Euler rotation, ordered as X, Y, Z.</td><td>Degrees</td><td><code>[0, 0, 0]</code></td></tr>
+        <tr><td><code>scale</code></td><td>Uniform number or per-axis scale tuple.</td><td>Scale factor</td><td><code>1</code></td></tr>
+        <tr><td><code>color</code></td><td>Hotspot color.</td><td>Hex number</td><td><code>0xffcc00</code></td></tr>
+        <tr><td><code>alpha</code></td><td>Normal hotspot opacity.</td><td>0 to 1</td><td><code>0.7</code></td></tr>
+        <tr><td><code>highlightColor</code></td><td>Optional color used while <code>highlighted</code> is true.</td><td>Hex number</td><td>Normal color</td></tr>
+        <tr><td><code>highlightAlpha</code></td><td>Optional opacity used while <code>highlighted</code> is true.</td><td>0 to 1</td><td>Normal alpha</td></tr>
+        <tr><td><code>highlighted</code></td><td>Initial highlighted state.</td><td>Boolean</td><td><code>false</code></td></tr>
+        <tr><td><code>transparent</code></td><td>Enables hotspot blending.</td><td>Boolean</td><td><code>true</code></td></tr>
+        <tr><td><code>doubleSided</code></td><td>Controls whether both primitive faces render.</td><td>Boolean</td><td><code>true</code></td></tr>
+        <tr><td><code>visible</code></td><td>Initial visibility.</td><td>Boolean</td><td><code>true</code></td></tr>
+        <tr><td><code>tags</code></td><td>Named grouping labels for batch visibility operations.</td><td>String array</td><td>None</td></tr>
+        <tr><td><code>clippable</code></td><td>Reserved clipping participation flag.</td><td>Boolean</td><td>None</td></tr>
+        <tr><td><code>measurable</code></td><td>Reserved measurement participation flag.</td><td>Boolean</td><td>None</td></tr>
+      </tbody>
+    </table>
+
+    <h2>Spots management at runtime</h2>
+    <p>Use the Presenter to list, add, and remove spots at runtime. Spot names have their own namespace and may match an object name. Shared placement and visibility properties keep spots convenient to author, while object material controls do not leak into the hotspot API.</p>
+    <pre><code>const spotIds = presenter.getSpotIds();
+console.log(spotIds);
+
+await presenter.addSpot('hotspotA', {
+  primitive: 'sphere',
+  size: 50,
+  position: [-300, 0, 200],
+  color: 0xff4d6d
+});
+
+const appearance = presenter.getSpotAppearance('hotspotA');
+presenter.setSpotAppearance('hotspotA', {
+  color: 0xffc857,
+  alpha: 0.85,
+  highlightColor: 0xffffff,
+  highlightAlpha: 1
+});
+
+// A pointer or picking handler can drive this state.
+presenter.setSpotHighlighted('hotspotA', true);
+presenter.setSpotHighlighted('hotspotA', false);
+
+presenter.removeSpot('hotspotA');</code></pre>
+    <p>Spot transforms use the same <code>position</code>, <code>rotation</code>, <code>scale</code>, and <code>matrix</code> declarations as objects. The shared <code>presenter.getEntityTransform(id)</code> and <code>presenter.setEntityTransform(id, update)</code> methods work for both namespaces; use an identifier that is unambiguous or keep object and spot identifiers distinct when calling them.</p>
+
+    <h2>Spot clicks</h2>
+    <p>Assign <code>onSpotClicked</code> for the simple 3DHOP-compatible form. The callback receives the clicked spot identifier first. Spot clicks are generated on primary-button release and are suppressed when the pointer movement is a navigation drag.</p>
+    <pre><code>presenter.onSpotClicked = (id) =&gt; {
+  console.log('Clicked spot:', id);
+};</code></pre>
+    <p>Use the subscription form when several parts of an application need to observe clicks or when the intersection details are useful.</p>
+    <pre><code>const handleSpotClick = (event) =&gt; {
+  console.log(event.id, event.point.toArray());
+};
+
+presenter.on('spotclick', handleSpotClick);
+presenter.off('spotclick', handleSpotClick);</code></pre>
+    <p>A <code>SpotClickEvent</code> contains <code>id</code>, the world-space intersection <code>point</code>, the owning Three.js <code>object</code>, and the original <code>PointerEvent</code>. Spot clicks are independent of the general picking mode, and only entities from the <code>spots</code> block can produce them.</p>
+  </main>
+</body>
+</html>

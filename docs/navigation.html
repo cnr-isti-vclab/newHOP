@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>newHOP navigation</title>
+  <style>
+    :root { color-scheme: dark; --bg: #0b1120; --panel: #111827; --panel-2: #1f2937; --text: #e5e7eb; --muted: #aab4c3; --accent: #7dd3fc; --line: rgba(148, 163, 184, 0.24); }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: linear-gradient(145deg, #0b1120, #172033); color: var(--text); font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.6; }
+    main { width: min(980px, calc(100vw - 32px)); margin: 0 auto; padding: 44px 0 72px; }
+    nav { margin-bottom: 28px; } a { color: var(--accent); }
+    h1 { margin: 0 0 8px; font-size: clamp(2rem, 5vw, 3.2rem); }
+    h2 { margin: 42px 0 12px; font-size: 1.55rem; }
+    h3 { margin: 26px 0 8px; font-size: 1.1rem; }
+    .lede, .note { color: var(--muted); }
+    .note { padding: 14px 16px; border-left: 3px solid var(--accent); background: rgba(17, 24, 39, 0.8); }
+    pre { overflow-x: auto; margin: 14px 0 20px; padding: 16px; border: 1px solid var(--line); border-radius: 8px; background: #080d18; color: #dbeafe; }
+    code { font-family: Consolas, "Courier New", monospace; font-size: 0.92em; }
+    table { width: 100%; border-collapse: collapse; margin: 12px 0 24px; background: rgba(17, 24, 39, 0.66); }
+    th, td { padding: 10px 12px; border: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { color: var(--accent); font-weight: 600; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+    .card { padding: 16px; border: 1px solid var(--line); border-radius: 8px; background: rgba(17, 24, 39, 0.7); }
+    .card h3 { margin-top: 0; }
+  </style>
+</head>
+<body>
+  <main>
+    <nav><a href="index.html">Documentation index</a> · <a href="../index.html">Examples</a></nav>
+    <h1>Navigation and Trackball</h1>
+    <p class="lede">The navigation block configures the camera interaction model. The current implementation is a custom turntable trackball with object-in-hand behavior, scene-aware fitting, authored limits, and programmatic viewpoint control.</p>
+
+<!------------------------------------------------------------------------------------------------------------->
+    <h2>Navigation configuration example</h2>
+    <p>Example configuration for the navigation block, specifying the type, limits, and initial view.</p>
+    <pre><code>
+navigation: {
+  type: 'turntable',
+  homeView: {
+    target: [0, 50, 0],
+    azimuth: -35,
+    elevation: 18,
+    distance: 1000
+  },
+  limits: {
+    azimuth: [-90, 90],
+    elevation: [-10, 60],
+    distance: [500, 2500],
+    pan: {
+      x: [-250, 250],
+      y: [-200, 250],
+      z: [-250, 250]
+    }
+  }
+}
+    </code></pre>
+
+<!------------------------------------------------------------------------------------------------------------->
+    <h2>General Properties</h2>
+    <p>General properties select the navigation mode and basic interaction behavior.</p>
+
+    <pre><code>
+type: 'turntable',
+upAxis: 'y',
+verticalAxisLocked: true
+    </code></pre>
+
+    <table>
+      <thead><tr><th>Property</th><th>Meaning</th><th>Units</th><th>Default</th></tr></thead>
+      <tbody>
+        <tr><td><code>type</code></td><td>Navigation mode. <code>turntable</code> is the current default; <code>sphere</code> is reserved for the alternate mode.</td><td>Identifier</td><td><code>turntable</code></td></tr>
+        <tr><td><code>upAxis</code></td><td>World axis treated as vertical by the camera orbit and base grid. Use <code>'y'</code> for <i>computer graphics</i> -style scenes or <code>'z'</code> for <i>survey and engineering</i> scenes.</td><td><code>'y' | 'z'</code></td><td><code>'y'</code></td></tr>
+        <tr><td><code>verticalAxisLocked</code></td><td>Prevents vertical axis while dragging.</td><td>Boolean</td><td><code>false</code></td></tr>
+      </tbody>
+    </table>
+    <p>At runtime, use the corresponding Trackball methods:</p>
+    <pre><code>
+presenter.trackball.setMode('turntable');
+presenter.trackball.setUpAxis('z');
+presenter.trackball.setVerticalAxisLocked(true);
+    </code></pre>
+    <p>The up-axis changes camera navigation and base-grid orientation only. Mesh coordinates, object transforms, picked points, and measurement results remain in their authored XYZ coordinate system. Pan limits remain literal world-axis <code>x</code>, <code>y</code>, and <code>z</code> ranges.</p>
+
+    <h2>Content alignment</h2>
+    <p>Use <code>world.sceneTransform</code> to align all authored content without rotating the camera, base grid, axes, or explicit world-space section planes. A content transform is applied above each object's local transform and is included in scene bounds, picking, and measurements.</p>
+    <pre><code>world: {
+  sceneTransform: {
+    rotation: [0, 0, 20]
+  }
+}</code></pre>
+    <p>Update or inspect the content transform at runtime with <code>presenter.setSceneTransform(update)</code> and <code>presenter.getSceneTransform()</code>. Component transforms use degrees and may specify <code>position</code>, <code>rotation</code>, or <code>scale</code>; a column-major <code>matrix</code> can be used instead, but matrix and component fields cannot be mixed.</p>
+
+<!------------------------------------------------------------------------------------------------------------->
+    <h2>Home View</h2>
+    <p>Specifies the view restored by the initial scene setup and by Trackball reset operations, including target, azimuth, elevation, and distance.</p>
+    <pre><code>
+homeView: {
+  target: [0, 50, 0],
+  azimuth: -35,
+  elevation: 18,
+  distance: 1000
+}
+    </code></pre>
+    
+    <table>
+      <thead><tr><th>Property</th><th>Meaning</th><th>Units</th><th>Default</th></tr></thead>
+      <tbody>
+        <tr><td><code>homeView.target</code></td><td>Home point around which the camera orbits. If omitted, it is the computed scene center.</td><td>Scene units</td><td>Scene center</td></tr>
+        <tr><td><code>homeView.azimuth</code></td><td>Horizontal orbit angle. If omitted, it is frontal view. </td><td>Degrees</td><td><code>0</code></td></tr>
+        <tr><td><code>homeView.elevation</code></td><td>Vertical orbit angle. If omitted, it is no elevation.</td><td>Degrees</td><td><code>0</code></td></tr>
+        <tr><td><code>homeView.distance</code></td><td>Home camera distance. If omitted, it is fitted from scene bounds.</td><td>Scene units</td><td>Automatic fit</td></tr>
+      </tbody>
+    </table>
+    <p>At runtime, update the home view with the same object structure:</p>
+    <pre><code>presenter.trackball.setHomeView({
+  target: [0, 50, 0],
+  azimuth: -35,
+  elevation: 18,
+  distance: 1000
+});</code></pre>
+  <p>To return to this configured home view, use the semantic reset operation:</p>
+  <pre><code>presenter.trackball.reset();</code></pre>
+
+<!------------------------------------------------------------------------------------------------------------->
+    <h2>Limits</h2>
+    <p>Specifies the limits for camera navigation, including azimuth, elevation, distance, and pan ranges.</p>
+    <p>Azimuth and elevation limits are angular ranges in degrees. Distance and pan limits use scene units. Pan limits are absolute world-space target coordinates.</p>
+    <pre><code>limits: {
+  azimuth: [-90, 90],
+  elevation: [-10, 60],
+  distance: [500, 2500],
+  pan: {
+    x: [-250, 250],
+    y: [-200, 250],
+    z: [-250, 250]
+  }
+}</code></pre>
+    <p>For unrestricted horizontal rotation, omit <code>azimuth</code>, use <code>azimuth: 'free'</code>, or use the legacy <code>[-180, 180]</code> convention.</p>
+    <table>
+      <thead><tr><th>Property</th><th>Meaning</th><th>Units</th><th>Default</th></tr></thead>
+      <tbody>
+        <tr><td><code>azimuth</code></td><td>Horizontal rotation range. Use <code>'free'</code> or omit it for unlimited rotation.</td><td>Degrees</td><td>Free</td></tr>
+        <tr><td><code>elevation</code></td><td>Vertical rotation range. Values are clamped below the poles.</td><td>Degrees</td><td><code>[-70, 70]</code></td></tr>
+        <tr><td><code>distance</code></td><td>Minimum and maximum camera distance from the target.</td><td>Scene units</td><td><code>[0.01, 10000]</code></td></tr>
+        <tr><td><code>pan.x</code></td><td>Absolute minimum and maximum target X coordinate.</td><td>Scene units</td><td>Free</td></tr>
+        <tr><td><code>pan.y</code></td><td>Absolute minimum and maximum target Y coordinate.</td><td>Scene units</td><td>Free</td></tr>
+        <tr><td><code>pan.z</code></td><td>Absolute minimum and maximum target Z coordinate.</td><td>Scene units</td><td>Free</td></tr>
+      </tbody>
+    </table>
+    <p>At runtime, pass a partial or complete limits object to the Trackball:</p>
+    <pre><code>presenter.trackball.setLimits({
+  azimuth: [-90, 90],
+  elevation: [-10, 60],
+  distance: [500, 2500],
+  pan: {
+    x: [-250, 250],
+    y: [-200, 250],
+    z: [-250, 250]
+  }
+});</code></pre>
+
+<!------------------------------------------------------------------------------------------------------------->
+    <h2>Speed</h2>
+    <p>Speed settings control how quickly the camera responds to user input.</p>
+    <p>Rotation and panning speeds are applied per pointer pixel. Zoom speed controls the exponential wheel sensitivity. These values are dimensionless controls, while the resulting distance and pan movement remain in scene units.</p>
+    <pre><code>navigation: {
+  speed: {
+    rotate: 0.008,
+    pan: 0.0015,
+    zoom: 0.001
+  }
+}</code></pre>
+    <table>
+      <thead><tr><th>Property</th><th>Meaning</th><th>Units</th><th>Default</th></tr></thead>
+      <tbody>
+        <tr><td><code>rotate</code></td><td>Rotation sensitivity per pointer pixel.</td><td>Radians per pixel</td><td><code>0.008</code></td></tr>
+        <tr><td><code>pan</code></td><td>Pan sensitivity relative to camera distance.</td><td>Scale factor</td><td><code>0.0015</code></td></tr>
+        <tr><td><code>zoom</code></td><td>Exponential mouse-wheel zoom sensitivity.</td><td>Scale factor</td><td><code>0.001</code></td></tr>
+      </tbody>
+    </table>
+    <p>At runtime, use the same speed structure. Partial updates leave omitted values unchanged:</p>
+    <pre><code>presenter.trackball.setSpeed({
+  rotate: 0.004,
+  pan: 0.001,
+  zoom: 0.0005
+});</code></pre>
+
+<!------------------------------------------------------------------------------------------------------------->
+    <h2>Pointer bindings</h2>
+    <p>Drag the view with the following pointer bindings:</p>
+    <table>
+      <thead><tr><th>Input</th><th>Action</th></tr></thead>
+      <tbody>
+        <tr><td>Left mouse drag</td><td>Rotate</td></tr>
+        <tr><td>Shift + left mouse drag</td><td>Pan</td></tr>
+        <tr><td>Middle mouse drag</td><td>Pan</td></tr>
+        <tr><td>Right mouse drag</td><td>Pan; the browser context menu is suppressed after dragging</td></tr>
+        <tr><td>Right mouse click</td><td>Open the browser context menu</td></tr>
+        <tr><td>Mouse wheel</td><td>Zoom</td></tr>
+      </tbody>
+    </table>
+
+<!------------------------------------------------------------------------------------------------------------->
+    <h2>Accessing Navigation State at Runtime</h2>
+    <p>It is possible, at runtime, to access the current navigation state through the Presenter or Trackball.</p>
+    <p>The status snapshot includes the current mode, input-lock state, target, camera position, up vector, angles, distance, and all active limits. Unlimited limits are represented by <code>null</code>.</p>
+    <pre><code>
+const status = presenter.getNavigationStatus();
+// or: presenter.trackball.getStatus()
+
+console.log(status.azimuth);              // degrees
+console.log(status.elevation);            // degrees
+console.log(status.distance);             // scene units
+console.log(status.target);               // current pan target
+console.log(status.navigationEnabled);
+console.log(status.limits);
+    </code></pre>    
+
+<!------------------------------------------------------------------------------------------------------------->
+    <h2>Observing Navigation Changes at Runtime</h2>
+    <p>It is possible to register a navigation change listener with the Presenter. This allows you to react to navigation changes in real-time, keeping your UI in sync with the user's interactions.</p>
+    <p>This feature can be used to implement html-based live UI components such as compasses, minimaps, orientation indicators, and custom 3D widgets. The callback receives the current Trackball status immediately when subscribed and again after every navigation change, including animation frames.</p>    
+    <pre><code>
+const unsubscribe = presenter.onNavigationChange((status) => {
+  compass.setAzimuth(status.azimuth);
+  compass.setElevation(status.elevation);
+  minimap.setTarget(status.target);
+});
+
+// When the widget is removed:
+unsubscribe();
+    </code></pre>
+    <p>This is event-driven and synchronized with the Presenter render state, to avoid a continuous polling of <code>getNavigationStatus()</code>.</p>    
+    <p>Multiple subscriptions can be active simultaneously, allowing different UI components to react independently to navigation changes. Each callback may be unsubscribed individually using the returned function.</p>
+
+<!------------------------------------------------------------------------------------------------------------->
+    <h2>Controlling Navigation at Runtime</h2>
+    <p>Navigation can be programmatically controlled at runtime using viewpoints, changing the camera position and orientation as needed.</p>
+    <p>For the turntable trackball, a viewpoint is defined by the orbit target and its three orbit parameters: azimuth, elevation, and distance. These are the native Trackball state values.</p>
+    <pre><code>
+const viewpoint = {
+  target: [0, 50, 0],
+  azimuth: 35,
+  elevation: 18,
+  distance: 1000
+};
+
+presenter.jumpToViewpoint(viewpoint);
+presenter.animateToViewpoint(viewpoint);       // default: 1500 ms
+presenter.animateToViewpoint(viewpoint, 800);  // explicit duration
+    </code></pre>
+    <h3>Resetting to Home</h3>
+    <p><code>reset()</code> returns the Trackball to the configured <code>homeView</code>. It is intended for Home buttons and shortcuts; use jump or animate for arbitrary viewpoints.</p>
+    <pre><code>presenter.trackball.reset();</code></pre>
+  <p>For integrations that need raw camera vectors, <code>presenter.trackball.getCameraViewpoint()</code> returns a compatibility snapshot containing <code>target</code>, <code>position</code>, and <code>up</code>. It can be applied with <code>setCameraViewpoint()</code>, but turntable code should prefer orbit viewpoints.</p>
+    <div class="grid">
+      <div class="card"><h3>Jump</h3><p><code>jumpToViewpoint</code> immediately applies the target and cancels any active animation.</p></div>
+      <div class="card"><h3>Animate</h3><p><code>animateToViewpoint</code> smoothly interpolates to the target. User drag, wheel input, reset, or another immediate viewpoint command interrupts the animation.</p></div>
+    </div>
+
+<!------------------------------------------------------------------------------------------------------------->
+    <h2>Locking User Input</h2>
+    <p>Locking user input prevents the user from interacting with the navigation controls, but programmatic control remains available.</p>
+    <p>When locked, pointer rotation, panning, and wheel zoom are ignored. Jump, animation, reset, and viewpoint restoration still work.</p>    
+    <pre><code>
+presenter.setNavigationEnabled(false);
+
+// do some programmatic motion while navigation is locked
+presenter.animateToViewpoint(viewpoint);
+
+presenter.setNavigationEnabled(true);
+    </code></pre>
+
+<!------------------------------------------------------------------------------------------------------------->
+    <h2>Double-click Re-centering</h2>
+    <p>Double-clicking a visible model or geometry entity recenters the turntable target on the picked surface point and zooms in slightly. Hotspots and helpers are ignored. The behavior is also disabled while navigation input is locked.</p>
+    <p>Programmatically, the same behavior is available through:</p>
+    <pre><code>
+presenter.recenterOnEntityPoint(point);
+presenter.recenterOnEntityPoint(point, 0.85); // optional zoom factor
+    </code></pre>
+
+<!------------------------------------------------------------------------------------------------------------->
+
+  </main>
+</body>
+</html>

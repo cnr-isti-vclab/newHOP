@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>newHOP</title>
+  <style>
+    html, body, #viewer { width: 100%; height: 100%; margin: 0; }
+    body { overflow: hidden; background: #1c2024; }
+  </style>
+</head>
+<body>
+  <div id="viewer"></div>
+  <script src="lib/newhop.global.js"></script>
+  <script>
+    const presenter = new newHOP.Presenter({ mount: 'viewer' });
+    presenter.setScene({
+      background: 0x1c2024,
+      entities: [
+        { id: 'model', type: 'model', file: 'models/laurana.ply' }
+      ]
+    });
+  </script>
+</body>
+</html>

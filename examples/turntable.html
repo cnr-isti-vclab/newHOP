@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>newHOP turntable example</title>
+  <style>
+    html, body, #viewer { width: 100%; height: 100%; margin: 0; }
+    body { overflow: hidden; background: #101316; color: #e5e7eb; font-family: sans-serif; }
+    #viewer { position: relative; }
+    .hud {
+      position: absolute;
+      left: 16px;
+      top: 16px;
+      z-index: 20;
+      width: min(330px, calc(100vw - 32px));
+      padding: 12px 14px;
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      border-radius: 8px;
+      background: rgba(17, 24, 39, 0.84);
+      backdrop-filter: blur(4px);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+    .hud strong { display: block; margin-bottom: 4px; }
+    .actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin-top: 10px; }
+    button {
+      min-height: 30px;
+      border: 1px solid rgba(148, 163, 184, 0.45);
+      border-radius: 5px;
+      padding: 5px 8px;
+      background: rgba(30, 41, 59, 0.9);
+      color: inherit;
+      cursor: pointer;
+      font: inherit;
+    }
+    button:hover { border-color: #93c5fd; }
+    .status { margin-top: 10px; color: #93c5fd; white-space: pre-line; }
+  </style>
+</head>
+<body>
+  <div id="viewer">
+    <div class="hud">
+      <strong>Turntable scene</strong>
+      <div>Laurana and gargoyle with runtime turntable controls.</div>
+      <div class="actions">
+        <button id="animate-orbit" type="button">Animate orbit</button>
+        <button id="animate-home" type="button">Animate home</button>
+        <button id="tight-limits" type="button">Tight limits</button>
+        <button id="free-limits" type="button">Free limits</button>
+        <button id="lock-navigation" type="button">Lock navigation</button>
+        <button id="unlock-navigation" type="button">Unlock navigation</button>
+      </div>
+      <div class="status" id="status">Loading models...</div>
+    </div>
+  </div>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { Presenter, Toolbar } from '../src/index.ts';
+
+    const presenter = new Presenter({ mount: 'viewer' });
+    new Toolbar(presenter, {
+      position: 'bottom-center',
+      buttons: ['home', 'fit', 'zoomIn', 'zoomOut', 'fullscreen']
+    });
+
+    const status = document.getElementById('status');
+    const homeView = {
+      target: [0, 100, 0],
+      azimuth: -35,
+      elevation: 18,
+      distance: 1800
+    };
+
+    const showStatus = (message) => {
+      const navigation = presenter.getNavigationStatus();
+      status.textContent = `${message}\nAzimuth ${navigation.azimuth.toFixed(1)}°, elevation ${navigation.elevation.toFixed(1)}°, distance ${navigation.distance.toFixed(0)}\nNavigation ${navigation.navigationEnabled ? 'unlocked' : 'locked'}`;
+    };
+
+    presenter.onNavigationChange(() => showStatus('Navigation ready'));
+
+    document.getElementById('animate-orbit').addEventListener('click', () => {
+      presenter.animateToViewpoint({
+        target: [0, 80, 0],
+        azimuth: 125,
+        elevation: 28,
+        distance: 1300
+      }, 1800);
+      showStatus('Animating orbit');
+    });
+    document.getElementById('animate-home').addEventListener('click', () => {
+      presenter.animateToViewpoint(homeView, 1200);
+      showStatus('Animating home');
+    });
+    document.getElementById('tight-limits').addEventListener('click', () => {
+      presenter.trackball.setLimits({
+        azimuth: [-60, 60],
+        elevation: [0, 45],
+        distance: [900, 2200]
+      });
+      showStatus('Applied tight limits');
+    });
+    document.getElementById('free-limits').addEventListener('click', () => {
+      presenter.trackball.setLimits({
+        azimuth: 'free',
+        elevation: [-80, 80],
+        distance: [500, 3000]
+      });
+      showStatus('Applied free azimuth limits');
+    });
+    document.getElementById('lock-navigation').addEventListener('click', () => {
+      presenter.setNavigationEnabled(false);
+      showStatus('Navigation locked');
+    });
+    document.getElementById('unlock-navigation').addEventListener('click', () => {
+      presenter.setNavigationEnabled(true);
+      showStatus('Navigation unlocked');
+    });
+
+    presenter.setScene({
+      world: {
+        background: 0x101316,
+        camera: { fov: 42 }
+      },
+      lighting: {
+        lights: {
+          fill: {
+            type: 'hemisphere',
+            enabled: true,
+            color: 0x666688,
+            groundColor: 0x665544,
+            intensity: 2.0,
+            position: [0, 1, 0]
+          },
+          key: {
+            type: 'directional',
+            enabled: true,
+            color: 0xfff1d6,
+            intensity: 2.0,
+            position: [500, 900, 700],
+            target: [0, 100, 0],
+            castShadow: true
+          }
+        }
+      },
+      navigation: {
+        type: 'turntable',
+        upAxis: 'y',
+        limits: {
+          azimuth: 'free',
+          elevation: [-80, 80],
+          distance: [500, 3000],
+          pan: {
+            x: [-700, 700],
+            y: [-500, 800],
+            z: [-700, 700]
+          }
+        },
+        homeView
+      },
+      helpers: {
+        origin: { type: 'axes', size: 300, color: 0xfbbf24 },
+        ground: { type: 'grid', size: 10, spacing: 1, color: 0x64748b, opacity: 0.45 },
+        extent: { type: 'sceneextent', color: 0xf472b6, opacity: 0.7 }
+      },
+objects: {
+        laurana: {
+          file: 'models/laurana.ply',
+          position: [0, 0, 0],
+          scale: 1,
+          color: 0xf2f3f5,
+          tags: ['main']
+        },
+        gargoyle: {
+          file: 'models/gargo.nxz',
+          position: [400, -240, 0],
+          rotation: [0, 45, 0],
+          scale: [2, 2, 2],
+          color: 0xa5b4fc,
+          transparent: true,
+          alpha: 0.9,
+          tags: ['secondary']
+        },
+        zucca: {
+          file: 'models/pumpkin.glb',
+          position: [-400, -240.0, 0],
+          color: 0xa5d8ff,
+          visible: true,
+          tags: ['secondary']
+        },        
+        base: {
+          geometry: new THREE.BoxGeometry(1200, 80, 900),
+          material: new THREE.MeshStandardMaterial({ color: 0x666666, roughness: 0.82, metalness: 0.08 }),
+          position: [0, -280, 0],
+          tags: ['base']
+        }
+      }
+    }).then(() => showStatus('Scene ready'));
+  </script>
+</body>
+</html>

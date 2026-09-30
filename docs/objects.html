@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>newHOP objects</title>
+  <style>
+    :root { color-scheme: dark; --bg: #0b1120; --panel: #111827; --text: #e5e7eb; --muted: #aab4c3; --accent: #7dd3fc; --line: rgba(148, 163, 184, 0.24); }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: linear-gradient(145deg, #0b1120, #172033); color: var(--text); font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.6; }
+    main { width: min(980px, calc(100vw - 32px)); margin: 0 auto; padding: 44px 0 72px; }
+    nav { margin-bottom: 28px; } a { color: var(--accent); }
+    h1 { margin: 0 0 8px; font-size: clamp(2rem, 5vw, 3.2rem); } h2 { margin: 42px 0 12px; font-size: 1.55rem; } h3 { margin: 34px 0 10px; color: #fbbf24; font-size: 1.35rem; font-weight: 700; } h3 code { font-size: 1em; }
+    .lede { color: var(--muted); } pre { overflow-x: auto; margin: 14px 0 20px; padding: 16px; border: 1px solid var(--line); border-radius: 8px; background: #080d18; color: #dbeafe; }
+    code { font-family: Consolas, "Courier New", monospace; font-size: 0.92em; } table { width: 100%; border-collapse: collapse; margin: 12px 0 24px; background: rgba(17, 24, 39, 0.66); }
+    th, td { padding: 10px 12px; border: 1px solid var(--line); text-align: left; vertical-align: top; } th { color: var(--accent); font-weight: 600; }
+  </style>
+</head>
+<body>
+  <main>
+    <nav><a href="index.html">Documentation index</a> · <a href="../index.html">Examples</a></nav>
+    <h1>Objects</h1>
+    <p class="lede">The <code>objects</code> block defines named scene content. Each entry is either a model, a Gaussian splat, or a Three.js <code>BufferGeometry</code> supplied directly by application code. Object identifiers are unique within the <code>objects</code> block; a spot may use the same identifier because spots have their own namespace.</p>
+
+    <h2>Objects Block Example</h2>
+    <pre><code>objects: {
+  gargoyle: {
+    file: 'models/gargo.nxz',
+    position: [0, 300, -100],
+    rotation: [0, 45, 0],
+    scale: [2, 2, 2],
+    color: 0xa5d8ff,
+    transparent: true,
+    alpha: 0.8,
+    visible: true,
+    tags: ['heritage', 'nexus'],
+    clippable: true,
+    measurable: true
+  },
+  marker: {
+    geometry: new THREE.BoxGeometry(20, 20, 20),
+    material: new THREE.MeshStandardMaterial({ color: 0xffc857 }),
+    position: [100, 100, 100],
+    rotation: [17, 40, 6],
+    scale: 1,
+    visible: true,
+    tags: ['annotation']
+  }
+}</code></pre>
+
+<!------------------------------------------------------------------------------------------------------------->
+  <h2>Objects management at runtime</h2>
+  <p>Use the Presenter to list, add, and remove objects at runtime. The object name is the key in the <code>objects</code> block and is kept in its own namespace.</p>
+  <pre><code>const objectIds = presenter.getObjectIds();
+console.log(objectIds);
+
+await presenter.addObject('newMarker', {
+  geometry: new THREE.BoxGeometry(10, 10, 10),
+  material: new THREE.MeshStandardMaterial({ color: 0xff0000 }),
+  position: [0, 0, 0]
+});
+
+presenter.removeObject('newMarker');</code></pre>
+
+    <h2>Object properties</h2>
+
+    <h3>Files</h3>
+
+    <h4>Mesh and model formats</h4>
+    <p>Set <code>file</code> to load a model. Supported mesh and model formats are <code>.nxz</code>, <code>.nxs</code>, <code>.glb</code>, <code>.gltf</code>, <code>.ply</code>, <code>.obj</code>, and <code>.stl</code>. Loader-specific sidecar and texture options are available when the format supports them.</p>
+    <pre><code>objects: {
+  sculpture: {
+    file: 'models/sculpture.obj',
+    materialFile: 'sculpture.mtl',
+    materialPath: 'models/materials/',
+    texture: 'models/override.png'
+  }
+}</code></pre>
+    <table>
+      <thead><tr><th>Property</th><th>Meaning</th><th>Default</th></tr></thead>
+      <tbody>
+        <tr><td><code>file</code></td><td>Model URL, relative to the page unless a loader base URL is configured.</td><td>Required for loaded models</td></tr>
+        <tr><td><code>materialFile</code></td><td>Explicit OBJ material-library filename. OBJ otherwise discovers <code>mtllib</code>, then a same-basename <code>.mtl</code>.</td><td>Auto-discovered for OBJ when present</td></tr>
+        <tr><td><code>materialPath</code></td><td>Base directory for an explicit OBJ material file and its sidecars.</td><td>OBJ file directory</td></tr>
+        <tr><td><code>texture</code></td><td>Explicit PLY texture. PLY otherwise reads common texture-file comments from its header.</td><td>Header-discovered when available</td></tr>
+      </tbody>
+    </table>
+
+    <h4>Gaussian-splat PLY</h4>
+    <p>Gaussian-splat PLY files use a different PLY property schema from ordinary point-cloud or mesh PLY files. Set <code>type: 'splat'</code> to select the Gaussian-splat loader; omitting <code>type</code> treats the file as a regular mesh model.</p>
+    <p>Splats use the same object transforms, visibility, tags, scene fitting, and runtime lifecycle as models. Mesh-only properties such as <code>material</code>, <code>transparent</code>, <code>uniform</code>, and <code>shadeless</code> do not apply. PLY files do not define a universal up axis, so an exported splat may need an authoring rotation or scale to match the rest of a scene.</p>
+    <pre><code>objects: {
+  well: {
+    type: 'splat',
+    file: 'large_assets/well_splat.ply',
+    rotation: [0, 0, 180],
+    scale: 1
+  }
+}</code></pre>
+    <p>See the <a href="../examples/splats.html">Gaussian splat example</a> for a complete scene.</p>
+
+    <h3>Transformation</h3>
+    <p>Scene rotations are authored in degrees and ordered as <code>[x, y, z]</code>. For example, <code>rotation: [0, 90, 0]</code> turns an object 90 degrees around the Y axis.</p>
+    <pre><code>objects: {
+  model: {
+    file: 'models/model.glb',
+    position: [10, 20, 30],
+    rotation: [0, 90, 0],
+    scale: [1, 2, 1],
+    visible: true
+  }
+}</code></pre>
+    <p>When a source provides a complete transform, use a column-major 4x4 <code>matrix</code>. It overrides <code>position</code>, <code>rotation</code>, and <code>scale</code> when all are present.</p>
+    <pre><code>objects: {
+  imported: {
+    file: 'models/imported.glb',
+    matrix: [
+      1, 0, 0, 0,
+      0, 1, 0, 0,
+      0, 0, 1, 0,
+      10, 20, 30, 1
+    ]
+  }
+}</code></pre>
+    <table>
+      <thead><tr><th>Property</th><th>Meaning</th><th>Units</th><th>Default</th></tr></thead>
+      <tbody>
+        <tr><td><code>position</code></td><td>Object translation.</td><td><code>[0, 0, 0]</code></td></tr>
+        <tr><td><code>rotation</code></td><td>Object Euler rotation in X, Y, Z order.</td><td><code>[0, 0, 0]</code></td></tr>
+        <tr><td><code>scale</code></td><td>Uniform number or per-axis scale tuple.</td><td><code>1</code></td></tr>
+        <tr><td><code>matrix</code></td><td>Complete column-major 4x4 transform. Overrides the other transformation properties.</td><td><code>[1, 0, 0, 0,<br>0, 1, 0, 0,<br>0, 0, 1, 0,<br>0, 0, 0, 1]</code></td></tr>
+      </tbody>
+    </table>
+
+    <p>Use <code>presenter.getEntityTransform(id)</code> to read the current transform snapshot and <code>presenter.setEntityTransform(id, update)</code> for partial position, rotation, or scale changes, or a complete matrix update. Supplying a matrix switches to matrix mode; supplying component fields switches back to component mode. Do not combine matrix and component fields in one declaration or update.</p>
+    <pre><code>const transform = presenter.getEntityTransform('sculpture');
+presenter.setEntityTransform('sculpture', {
+  position: [20, 0, 10],
+  rotation: [0, 45, 0]
+});</code></pre>
+
+    <h3>Appearance</h3>
+    <p>Appearance values are grouped so material and visibility changes can be read or updated together. The defaults are <code>color: 0xffffff</code>, <code>alpha: 0.5</code>, <code>transparent: false</code>, and <code>uniform: false</code>. These values are independent: setting <code>alpha</code> never changes <code>transparent</code>, setting <code>transparent</code> uses the current alpha, setting <code>color</code> never changes <code>uniform</code>, and setting <code>uniform</code> does not change color.</p>
+    <pre><code>objects: {
+  sculpture: {
+    file: 'models/sculpture.glb',
+    uniform: true,
+    color: 0xa5d8ff,
+    transparent: true,
+    alpha: 0.7,
+    shadeless: false,
+    doubleSided: false,
+    visible: true
+  }
+}
+
+const appearance = presenter.getObjectAppearance('sculpture');
+presenter.setObjectAppearance('sculpture', {
+  uniform: false,
+  transparent: false,
+  visible: true
+});</code></pre>
+    <table>
+      <thead><tr><th>Property</th><th>Meaning</th><th>Default</th></tr></thead>
+      <tbody>
+        <tr><td><code>visible</code></td><td>Whether the object is rendered.</td><td><code>true</code></td></tr>
+        <tr><td><code>uniform</code></td><td>Replaces source textures and vertex colors. It does not change the configured <code>color</code>.</td><td><code>false</code></td></tr>
+        <tr><td><code>color</code></td><td>Color modifier used only when <code>uniform</code> is true. Setting it does not enable uniform mode or overwrite authored file color by itself.</td><td><code>0xffffff</code></td></tr>
+        <tr><td><code>transparent</code></td><td>Enables material blending. This is an independent author-controlled value and is not changed by <code>alpha</code>.</td><td><code>false</code></td></tr>
+        <tr><td><code>alpha</code></td><td>Sets the material opacity when <code>transparent</code> is true. It does not enable transparency by itself.</td><td><code>0.5</code></td></tr>
+        <tr><td><code>shadeless</code></td><td>Uses an unlit material while retaining source color inputs.</td><td><code>false</code></td></tr>
+        <tr><td><code>doubleSided</code></td><td>Controls whether both material faces render.</td><td><code>true</code> for OBJ, PLY, and Nexus; authored value for GLB/GLTF</td></tr>
+      </tbody>
+    </table>
+    <p><code>presenter.getObjectAppearance(id)</code> returns the grouped appearance state, including the default <code>color</code>, <code>alpha</code>, <code>transparent</code>, and <code>uniform</code> values. <code>presenter.setObjectAppearance(id, update)</code> accepts any combination of these properties, and <code>setColor</code>, <code>setAlpha</code>, and the appearance API update only the value they receive. Color remains inactive until uniform mode is enabled; alpha remains inactive until transparent mode is enabled. The API applies to objects only; spots retain their primitive-specific controls.</p>
+
+    <h3>Material Properties</h3>
+    <p>Objects can declare serializable material properties without replacing authored GLB/GLTF materials. Explicit values are applied after loading to every material in the object; unsupported properties are ignored. Appearance modifiers still control their stronger color, transparency, and shading behavior.</p>
+    <pre><code>objects: {
+  sculpture: {
+    file: 'models/sculpture.glb',
+    material: {
+      roughness: 0.72,
+      metalness: 0,
+      specularColor: 0xffffff,
+      shininess: 30
+    }
+  }
+}
+
+const material = presenter.getObjectMaterial('sculpture');
+presenter.setObjectMaterial('sculpture', {
+  roughness: 0.65,
+  metalness: 0
+});</code></pre>
+    <p><code>getObjectMaterial(id)</code> returns common values across the object's materials; a value is <code>undefined</code> when materials disagree or do not expose that property. <code>setObjectMaterial(id, update)</code> accepts a partial update and reapplies it to the object's material variants.</p>
+
+    <h2>World Content Transform</h2>
+    <p>When a complete collection of authored objects needs alignment, use <code>world.sceneTransform</code> instead of changing every object. This transform is applied to the content root, so it rotates or moves models and spots together while the camera and navigation/reference helpers remain stable.</p>
+    <pre><code>world: {
+  sceneTransform: {
+    position: [0, 0, 0],
+    rotation: [0, 0, 20],
+    scale: 1
+  }
+}</code></pre>
+    <p>The transformed content contributes to scene bounds and camera fitting. Picking and measurements return the resulting world-space coordinates. Runtime updates use <code>presenter.setSceneTransform()</code>; inspect the current mode and matrix with <code>presenter.getSceneTransform()</code>.</p>
+  </main>
+</body>
+</html>

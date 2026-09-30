@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>newHOP Z-up example</title>
+  <style>
+    html, body, #viewer { width: 100%; height: 100%; margin: 0; }
+    body { overflow: hidden; background: #111827; color: #e5e7eb; font-family: sans-serif; }
+    #viewer { position: relative; }
+    .hud {
+      position: absolute;
+      left: 16px;
+      top: 16px;
+      z-index: 20;
+      max-width: 320px;
+      padding: 12px 14px;
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      border-radius: 8px;
+      background: rgba(15, 23, 42, 0.82);
+      backdrop-filter: blur(4px);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+    .hud strong { display: block; margin-bottom: 4px; }
+    .light-controls { display: grid; gap: 4px; margin-top: 10px; }
+    .light-controls label { display: flex; align-items: center; gap: 7px; }
+    .light-controls input { accent-color: #93c5fd; }
+    .flashlight-controls { margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(148, 163, 184, 0.3); }
+    .flashlight-toggle { display: flex; align-items: center; gap: 7px; }
+    .hud-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .hud-actions button {
+      border: 1px solid rgba(148, 163, 184, 0.45);
+      border-radius: 5px;
+      padding: 5px 8px;
+      background: rgba(30, 41, 59, 0.9);
+      color: inherit;
+      cursor: pointer;
+      font: inherit;
+    }
+    .hud-actions button:hover { border-color: #93c5fd; }
+    .status { color: #93c5fd; }
+  </style>
+</head>
+<body>
+  <div id="viewer">
+    <div class="hud">
+      <strong>Z-up navigation</strong>
+      <div>cloaca.nxz + sempronia.nxz</div>
+      <div>Authored XYZ is preserved; picking reports transformed world coordinates.</div>
+      <div class="light-controls">
+        <label><input type="checkbox" data-light="fill"> Hemisphere fill</label>
+        <label><input type="checkbox" data-light="key"> Directional key</label>
+      </div>
+      <div class="flashlight-controls">
+        <label class="flashlight-toggle"><input id="flashlight-toggle" type="checkbox"> Flashlight</label>
+        <label class="flashlight-toggle"><input id="flashlight-mode-toggle" type="checkbox"> Aim flashlight with drag</label>
+        <div class="hud-actions">
+          <button id="flashlight-warm" type="button">Warm flashlight</button>
+          <button id="flashlight-cold" type="button">Cold flashlight</button>
+        </div>
+      </div>
+      <div class="status" id="status">Loading models; scene lights are disabled for flashlight testing...</div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { Presenter, Toolbar } from '../src/index.ts';
+
+    const presenter = new Presenter({ mount: 'viewer' });
+    new Toolbar(presenter, { position: 'bottom-center' });
+
+    presenter.picking.setOnPick((result) => {
+      console.log('Picked point:', result.point.toArray());
+    });
+    presenter.setPickingMode(true);
+
+    document.querySelectorAll('[data-light]').forEach((input) => {
+      input.addEventListener('change', (event) => {
+        const checkbox = event.currentTarget;
+        const id = checkbox.dataset.light;
+        if (!id) return;
+        presenter.lighting.setSceneLightEnabled(id, checkbox.checked);
+        document.getElementById('status').textContent = `${id}: ${checkbox.checked ? 'on' : 'off'}`;
+      });
+    });
+
+    document.getElementById('flashlight-toggle').addEventListener('change', (event) => {
+      const checkbox = event.currentTarget;
+      presenter.lighting.setFlashlight({ enabled: checkbox.checked });
+      document.getElementById('status').textContent = `Flashlight: ${checkbox.checked ? 'on' : 'off'}`;
+    });
+
+    document.getElementById('flashlight-mode-toggle').addEventListener('change', (event) => {
+      const checkbox = event.currentTarget;
+      presenter.setFlashlightMode(checkbox.checked);
+      document.getElementById('status').textContent = checkbox.checked
+        ? 'Flashlight aim mode: drag to orient'
+        : 'Flashlight aim mode: off';
+    });
+
+    document.getElementById('flashlight-warm').addEventListener('click', () => {
+      presenter.lighting.setFlashlight({ enabled: true, color: 0xffb36b, intensity: 1.6 });
+      document.getElementById('flashlight-toggle').checked = true;
+      document.getElementById('status').textContent = 'Flashlight: warm';
+    });
+
+    document.getElementById('flashlight-cold').addEventListener('click', () => {
+      presenter.lighting.setFlashlight({ enabled: true, color: 0xb9dcff, intensity: 1.6 });
+      document.getElementById('flashlight-toggle').checked = true;
+      document.getElementById('status').textContent = 'Flashlight: cold';
+    });
+
+    presenter.onSceneReady(() => {
+      document.getElementById('status').textContent = 'Scene ready: Z is vertical';
+    });
+
+    presenter.setScene({
+      world: {
+        background: {
+          file: 'media/env.jpg',
+          azimuth: 0
+        },
+        camera: { fov: 42 },
+        sceneTransform: {
+          rotation: [0, 0, 23]
+        }
+      },
+      lighting: {
+        lights: {
+          fill: {
+            type: 'hemisphere',
+            enabled: false,
+            color: 0x9db7d9,
+            groundColor: 0x3f4652,
+            intensity: 1.8,
+            position: [0, 0, 1]
+          },
+          key: {
+            type: 'directional',
+            enabled: false,
+            color: 0xfff1d6,
+            intensity: 2.4,
+            position: [250, -350, 500],
+            target: [0, 0, 80],
+            castShadow: true
+          }
+        },
+        flashlight: {
+          enabled: false,
+          azimuth: 0,
+          elevation: 0
+        }
+      },
+      navigation: {
+        type: 'turntable',
+        upAxis: 'z',
+        limits: {
+          azimuth: 'free',
+          elevation: [-80, 80],
+          distance: [1, 200],
+          pan: {
+            x: [-50, 50],
+            y: [-50, 50],
+            z: [-50, 50]
+          }
+        },
+        homeView: {
+          azimuth: 0,
+          elevation: 60,
+        }
+      },
+      helpers: {
+        origin: { type: 'axes', size: 15, color: 0xfbbf24 },
+        ground: { type: 'grid', size: 50, spacing: 5, color: 0x60a5fa, opacity: 0.65 },
+        extent: { type: 'sceneextent', color: 0xf472b6, opacity: 0.8 }
+      },
+      objects: {
+        cloaca: {
+          file: 'large_assets/cloaca.nxz',
+          scale: 1,
+          color: 0xf8fafc,
+          tags: ['survey']
+        },
+        sempronia: {
+          file: 'large_assets/sempronia.nxz',
+          scale: 1,
+          color: 0xfbbf24,
+          alpha: 0.85,
+          tags: ['survey']
+        }
+      }
+    });
+  </script>
+</body>
+</html>
