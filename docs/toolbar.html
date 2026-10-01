@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>newHOP toolbar</title>
+  <style>
+    :root { color-scheme: dark; --bg: #0b1120; --panel: #111827; --text: #e5e7eb; --muted: #aab4c3; --accent: #7dd3fc; --line: rgba(148, 163, 184, 0.24); }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: linear-gradient(145deg, #0b1120, #172033); color: var(--text); font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.6; }
+    main { width: min(980px, calc(100vw - 32px)); margin: 0 auto; padding: 44px 0 72px; }
+    nav { margin-bottom: 28px; } a { color: var(--accent); }
+    h1 { margin: 0 0 8px; font-size: clamp(2rem, 5vw, 3.2rem); }
+    h2 { margin: 42px 0 12px; font-size: 1.55rem; }
+    h3 { margin: 26px 0 8px; font-size: 1.1rem; }
+    .lede, .note { color: var(--muted); }
+    .note { padding: 14px 16px; border-left: 3px solid var(--accent); background: rgba(17, 24, 39, 0.8); }
+    pre { overflow-x: auto; margin: 14px 0 20px; padding: 16px; border: 1px solid var(--line); border-radius: 8px; background: #080d18; color: #dbeafe; }
+    code { font-family: Consolas, "Courier New", monospace; font-size: 0.92em; }
+    table { width: 100%; border-collapse: collapse; margin: 12px 0 24px; background: rgba(17, 24, 39, 0.66); }
+    th, td { padding: 10px 12px; border: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { color: var(--accent); font-weight: 600; }
+  </style>
+</head>
+<body>
+  <main>
+    <nav><a href="index.html">Documentation index</a> · <a href="navigation.html">Navigation</a> · <a href="../index.html">Examples</a></nav>
+    <h1>Basic Toolbar</h1>
+    <p class="lede">The optional <code>Toolbar</code> is a small set of controls built on the Presenter's public API. It is distributed with newHOP, but the Presenter does not create or require it; an application can use custom controls instead.</p>
+
+    <h2>Creating a Toolbar</h2>
+    <pre><code>import { Presenter, Toolbar } from '../src/index.ts';
+
+const presenter = new Presenter({ mount: 'viewer' });
+const toolbar = new Toolbar(presenter, {
+  position: 'bottom-center'
+});</code></pre>
+    <p>The toolbar is mounted in the Presenter's container by default. Set <code>mount</code> to an HTML element or element ID to place it elsewhere. The container is anchored automatically when needed.</p>
+
+    <h2>Default Buttons</h2>
+    <p>If <code>buttons</code> is omitted, the toolbar contains these items in order:</p>
+    <table>
+      <thead><tr><th>ID</th><th>Action</th></tr></thead>
+      <tbody>
+        <tr><td><code>home</code></td><td>Restore the stored Home viewpoint.</td></tr>
+        <tr><td><code>fit</code></td><td>Fit the object scene using the current viewing direction.</td></tr>
+        <tr><td><code>zoomIn</code></td><td>Dolly the camera closer.</td></tr>
+        <tr><td><code>zoomOut</code></td><td>Dolly the camera farther away.</td></tr>
+        <tr><td><code>fullscreen</code></td><td>Enter or leave fullscreen mode for the Presenter container.</td></tr>
+      </tbody>
+    </table>
+
+    <h2>Predefined Items</h2>
+    <p>Authors can assemble a toolbar from the complete predefined palette. <code>measure</code> and <code>section</code> are available when explicitly selected.</p>
+    <table>
+      <thead><tr><th>ID</th><th>Role</th><th>Repeatable</th></tr></thead>
+      <tbody>
+        <tr><td><code>home</code>, <code>fit</code>, <code>zoomIn</code>, <code>zoomOut</code>, <code>measure</code>, <code>section</code>, <code>fullscreen</code></td><td>Built-in interactive controls.</td><td>No</td></tr>
+        <tr><td><code>spacer</code></td><td>Fixed-size empty separation.</td><td>Yes</td></tr>
+        <tr><td><code>hardrule</code></td><td>Fixed-size visual separator.</td><td>Yes</td></tr>
+      </tbody>
+    </table>
+    <pre><code>new Toolbar(presenter, {
+  position: 'bottom-center',
+  buttons: ['home', 'fit', 'spacer', 'measure', 'hardrule', 'fullscreen']
+});</code></pre>
+    <p>Non-repeatable items use their first occurrence. Later duplicates are ignored and reported with <code>console.warn</code>. Spacers and hardrules may be repeated freely.</p>
+
+    <h2>Custom Buttons</h2>
+    <p>A custom declaration block can combine the public viewer API into an application-specific control. Its <code>icon</code> can be text or a DOM <code>Node</code>.</p>
+    <pre><code>new Toolbar(presenter, {
+  buttons: [
+    'home',
+    'fit',
+    {
+      kind: 'custom',
+      id: 'front-fit',
+      label: 'Fit from front',
+      icon: 'F',
+      onClick: () =&gt; presenter.fitToScene(
+        { azimuth: 0, elevation: 0 },
+        true,
+        600
+      )
+    }
+  ]
+});</code></pre>
+    <table>
+      <thead><tr><th>Property</th><th>Meaning</th></tr></thead>
+      <tbody>
+        <tr><td><code>kind</code></td><td>Must be <code>'custom'</code>.</td></tr>
+        <tr><td><code>id</code></td><td>Application-defined identifier. It must be unique among custom buttons.</td></tr>
+        <tr><td><code>label</code></td><td>Button tooltip and accessible label.</td></tr>
+        <tr><td><code>icon</code></td><td>Text or a DOM node used as the button graphic.</td></tr>
+        <tr><td><code>onClick</code></td><td>Optional button-specific handler receiving the mouse event.</td></tr>
+        <tr><td><code>toggle</code></td><td>Optional active-state styling flag.</td></tr>
+        <tr><td><code>isActive</code></td><td>Optional function returning the current active state.</td></tr>
+      </tbody>
+    </table>
+    <p>Instead of a handler on each declaration, provide <code>onCustomButton(id, event)</code> on the toolbar configuration. A custom button with its own <code>onClick</code> uses that handler in preference to the shared callback.</p>
+
+    <h2>Position and Lifecycle</h2>
+    <p>Use <code>setPosition()</code> to change the toolbar position after creation. Call <code>refresh()</code> after application state changes that affect custom active states, and call <code>dispose()</code> when the toolbar is no longer needed.</p>
+    <pre><code>toolbar.setPosition('top-right');
+toolbar.refresh();
+toolbar.dispose();</code></pre>
+
+    <div class="note"><strong>Design boundary:</strong> the built-in toolbar is intentionally simple. For custom sizing, layouts, graphics, or more complex interactions, build an application-owned component and call the same public Presenter and manager APIs.</div>
+  </main>
+</body>
+</html>

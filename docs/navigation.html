@@ -253,11 +253,48 @@ presenter.animateToViewpoint(viewpoint, 800);  // explicit duration
     <h3>Resetting to Home</h3>
     <p><code>reset()</code> returns the Trackball to the configured <code>homeView</code>. It is intended for Home buttons and shortcuts; use jump or animate for arbitrary viewpoints.</p>
     <pre><code>presenter.trackball.reset();</code></pre>
+    <h3>Fitting the Scene</h3>
+    <p><code>presenter.fitToScene(direction, recenter, duration)</code> fits the object scene in the camera view. Fitting uses the object bounding-box corners directly, with no additional padding; helpers, grids, and spots do not contribute to the fit.</p>
+    <table>
+      <thead><tr><th>Parameter</th><th>Meaning</th><th>Default</th></tr></thead>
+      <tbody>
+        <tr><td><code>direction</code></td><td>Scene-relative <code>{ azimuth, elevation }</code> in degrees. If omitted, the current viewing direction is preserved.</td><td>Current direction</td></tr>
+        <tr><td><code>recenter</code></td><td>If <code>true</code>, move the orbit target to the scene center. If <code>false</code>, preserve the current target.</td><td><code>false</code></td></tr>
+        <tr><td><code>duration</code></td><td>Animation duration in milliseconds. A positive value animates the fit; zero applies it immediately.</td><td><code>0</code></td></tr>
+      </tbody>
+    </table>
+    <p>Requested directions are clamped to the navigation limits without raising an error. Fitting never changes the authored <code>homeView</code>, so <code>reset()</code> still returns to Home.</p>
+    <pre><code>presenter.fitToScene();
+  presenter.fitToScene({ azimuth: 90, elevation: 0 }, true, 600);</code></pre>
+    <p>When no <code>homeView</code> is authored, the load-time fit supplies the default Home viewpoint.</p>
   <p>For integrations that need raw camera vectors, <code>presenter.trackball.getCameraViewpoint()</code> returns a compatibility snapshot containing <code>target</code>, <code>position</code>, and <code>up</code>. It can be applied with <code>setCameraViewpoint()</code>, but turntable code should prefer orbit viewpoints.</p>
     <div class="grid">
       <div class="card"><h3>Jump</h3><p><code>jumpToViewpoint</code> immediately applies the target and cancels any active animation.</p></div>
       <div class="card"><h3>Animate</h3><p><code>animateToViewpoint</code> smoothly interpolates to the target. User drag, wheel input, reset, or another immediate viewpoint command interrupts the animation.</p></div>
     </div>
+
+<!------------------------------------------------------------------------------------------------------------->
+    <h2>Toolbar</h2>
+    <p>The optional <code>Toolbar</code> component is a public-API client. It is not created by the Presenter, and applications may replace it with their own controls.</p>
+    <p>With no <code>buttons</code> list, the toolbar contains <code>home</code>, <code>fit</code>, <code>zoomIn</code>, <code>zoomOut</code>, and <code>fullscreen</code>. Additional predefined buttons are available by explicit selection: <code>measure</code> and <code>section</code>.</p>
+    <pre><code>new Toolbar(presenter, {
+  position: 'bottom-center',
+  buttons: ['home', 'fit', 'spacer', 'measure', 'hardrule', 'fullscreen']
+});</code></pre>
+    <p><code>spacer</code> and <code>hardrule</code> are fixed-size layout items and may be repeated. Other predefined IDs are used only at their first occurrence; later duplicates are ignored with a console warning.</p>
+    <p>Custom buttons use declaration blocks. Their <code>icon</code> may be text or a DOM node. Provide either a button-specific <code>onClick</code> or the toolbar-level <code>onCustomButton</code> callback.</p>
+    <pre><code>new Toolbar(presenter, {
+  buttons: [
+    'home',
+    {
+      kind: 'custom',
+      id: 'front-fit',
+      label: 'Fit from front',
+      icon: 'F',
+      onClick: () =&gt; presenter.fitToScene({ azimuth: 0, elevation: 0 }, true, 600)
+    }
+  ]
+});</code></pre>
 
 <!------------------------------------------------------------------------------------------------------------->
     <h2>Locking User Input</h2>

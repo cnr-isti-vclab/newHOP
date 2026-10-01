@@ -17,7 +17,7 @@ Presenter
   |-- scene / camera / renderer
 ```
 
-The Presenter owns the scene lifecycle and coordinates managers. Managers own focused behavior and should not reach into unrelated managers.
+The Presenter owns the scene lifecycle and coordinates managers. Managers own focused behavior and should not reach into unrelated managers. UI components such as `Toolbar` are optional API clients: they are distributed separately from the Presenter class, and applications may replace them with custom controls that call the same public methods.
 
 The renderer enables antialiasing and shadow maps by default. Pass `shadows: false` to the `Presenter` constructor to disable shadow rendering for lightweight scenes. Runtime meshes cast and receive shadows automatically; individual scene lights opt into shadow casting with `castShadow: true`. The Presenter owns spot click semantics: it resolves hotspot entities through the shared picking raycaster and dispatches only completed primary-button clicks, keeping navigation drags from activating spots. Applications can use the compatibility `onSpotClicked` callback or the `spotclick` subscription event.
 
@@ -119,7 +119,7 @@ await presenter.setScene(sceneDescription);
 unsubscribe();
 ```
 
-Scene bounds are computed from transformed objects, Gaussian splat bounds, and Nexus bounding spheres; spots have separate manager bounds for local queries but do not affect scene framing. Bounds are refreshed when objects finish loading, are removed, or receive runtime transform updates. Registered scene-extent helpers and base grids follow those refreshed bounds, including while entities are arriving asynchronously. Automatic fitting respects navigation limits.
+Scene bounds are computed from transformed objects, Gaussian splat bounds, and Nexus bounding spheres; spots have separate manager bounds for local queries but do not affect scene framing. Bounds are refreshed when objects finish loading, are removed, or receive runtime transform updates. Registered scene-extent helpers and base grids follow those refreshed bounds, including while entities are arriving asynchronously. The load-time fit supplies the default Home viewpoint only when no authored `homeView` is present; runtime `presenter.fitToScene(direction?, recenter?, duration?)` preserves the current direction by default, can recenter on the scene, and optionally animates without replacing Home. Requested directions are clamped by navigation limits. Automatic fitting respects navigation limits.
 
 ## Bundles and Examples
 

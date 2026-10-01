@@ -16,6 +16,18 @@ export interface TurntableViewpoint {
   distance: number;
 }
 
+export interface ViewDirection {
+  azimuth: number;
+  elevation: number;
+}
+
+export interface FitOptions {
+  updateStart?: boolean;
+  direction?: ViewDirection;
+  recenter?: boolean;
+  duration?: number;
+}
+
 /** Camera-space compatibility snapshot for integrations that need raw camera vectors. */
 export interface CameraViewpoint {
   target: [number, number, number];
@@ -277,25 +289,44 @@ export class Trackball {
     this.applyOrbit();
   }
 
-  fitToBounds(bounds: THREE.Box3, padding = 1.2): void {
+  fitToBounds(bounds: THREE.Box3, options: FitOptions = {}): void {
+    const updateStart = options.updateStart ?? false;
+    const duration = Math.max(options.duration ?? 0, 0);
+    const azimuth = options.direction
+      ? this.normalizeAzimuth(THREE.MathUtils.degToRad(options.direction.azimuth))
+      : this.azimuth;
+    const elevation = options.direction
+      ? THREE.MathUtils.clamp(THREE.MathUtils.degToRad(options.direction.elevation), this.minElevation, this.maxElevation)
+      : this.elevation;
     if (bounds.isEmpty()) {
-      this.setViewpoint({ target: [0, 0, 0], azimuth: 0, elevation: 0, distance: 3 });
-      this.start = this.getViewpoint();
+      const viewpoint: Viewpoint = {
+        target: [0, 0, 0],
+        azimuth: THREE.MathUtils.radToDeg(azimuth),
+        elevation: THREE.MathUtils.radToDeg(elevation),
+        distance: 3
+      };
+      this.applyFitViewpoint(viewpoint, updateStart, duration);
       return;
     }
     const center = bounds.getCenter(new THREE.Vector3());
-    const size = bounds.getSize(new THREE.Vector3());
-    const radius = Math.max(size.length() / 2, this.minDistance);
     const verticalHalfAngle = THREE.MathUtils.degToRad(this.camera.fov / 2);
     const horizontalHalfAngle = Math.atan(Math.tan(verticalHalfAngle) * this.camera.aspect);
-    const halfAngle = Math.max(Math.min(verticalHalfAngle, horizontalHalfAngle), 0.01);
-    this.target.copy(center);
-    this.distance = THREE.MathUtils.clamp((radius / Math.tan(halfAngle)) * padding, this.minDistance, this.maxDistance);
-    this.azimuth = THREE.MathUtils.clamp(0, this.minAzimuth, this.maxAzimuth);
-    this.elevation = THREE.MathUtils.clamp(0, this.minElevation, this.maxElevation);
-    this.clampTarget();
-    this.applyOrbit();
-    this.start = this.getViewpoint();
+    const target = options.recenter ? center : this.target.clone();
+    target.x = THREE.MathUtils.clamp(target.x, this.minPan.x, this.maxPan.x);
+    target.y = THREE.MathUtils.clamp(target.y, this.minPan.y, this.maxPan.y);
+    target.z = THREE.MathUtils.clamp(target.z, this.minPan.z, this.maxPan.z);
+    const distance = THREE.MathUtils.clamp(
+      calculateFitDistance(bounds, target, azimuth, elevation, this.upAxis, verticalHalfAngle, horizontalHalfAngle),
+      this.minDistance,
+      this.maxDistance
+    );
+    const viewpoint: Viewpoint = {
+      target: target.toArray() as [number, number, number],
+      azimuth: THREE.MathUtils.radToDeg(azimuth),
+      elevation: THREE.MathUtils.radToDeg(elevation),
+      distance
+    };
+    this.applyFitViewpoint(viewpoint, updateStart, duration);
   }
 
   getViewpoint(): Viewpoint {
@@ -357,6 +388,12 @@ export class Trackball {
 
   animateTo(viewpoint: Viewpoint, duration = 1500): void {
     this.animation = { from: this.getViewpoint(), to: viewpoint, elapsed: 0, duration };
+  }
+
+  private applyFitViewpoint(viewpoint: Viewpoint, updateStart: boolean, duration: number): void {
+    if (updateStart) this.start = viewpoint;
+    if (duration > 0) this.animateTo(viewpoint, duration);
+    else this.jumpTo(viewpoint);
   }
 
   update(deltaTime: number): void {
@@ -530,4 +567,77 @@ function isLegacyFreeAzimuth(range: [number, number] | 'free' | undefined): bool
 
 function finiteOrNull(value: number | undefined): number | null {
   return value === undefined || !Number.isFinite(value) ? null : value;
+}
+
+function calculateFitDistance(
+  bounds: THREE.Box3,
+  target: THREE.Vector3,
+  azimuth: number,
+  elevation: number,
+  upAxis: UpAxis,
+  verticalHalfAngle: number,
+  horizontalHalfAngle: number
+): number {
+  const basis = getOrbitBasis(azimuth, elevation, upAxis);
+  let distance = 0;
+  for (const corner of getBoxCorners(bounds)) {
+    const relative = corner.sub(target);
+    const depth = relative.dot(basis.forward);
+    const horizontal = Math.abs(relative.dot(basis.right));
+    const vertical = Math.abs(relative.dot(basis.up));
+    distance = Math.max(
+      distance,
+      horizontal / Math.tan(horizontalHalfAngle) - depth,
+      vertical / Math.tan(verticalHalfAngle) - depth
+    );
+  }
+  return distance;
+}
+
+function getOrbitBasis(azimuth: number, elevation: number, upAxis: UpAxis): {
+  forward: THREE.Vector3;
+  right: THREE.Vector3;
+  up: THREE.Vector3;
+} {
+  const horizontal = Math.cos(elevation);
+  const offset = upAxis === 'y'
+    ? new THREE.Vector3(
+        Math.sin(azimuth) * horizontal,
+        Math.sin(elevation),
+        Math.cos(azimuth) * horizontal
+      )
+    : new THREE.Vector3(
+        Math.sin(azimuth) * horizontal,
+        -Math.cos(azimuth) * horizontal,
+        Math.sin(elevation)
+      );
+  const right = upAxis === 'y'
+    ? new THREE.Vector3(Math.cos(azimuth), 0, -Math.sin(azimuth))
+    : new THREE.Vector3(Math.cos(azimuth), Math.sin(azimuth), 0);
+  const up = upAxis === 'y'
+    ? new THREE.Vector3(
+        Math.sin(azimuth) * Math.sin(elevation),
+        Math.cos(elevation),
+        Math.cos(azimuth) * Math.sin(elevation)
+      )
+    : new THREE.Vector3(
+        -Math.sin(azimuth) * Math.sin(elevation),
+        Math.cos(azimuth) * Math.sin(elevation),
+        Math.cos(elevation)
+      );
+  return { forward: offset.negate(), right, up };
+}
+
+function getBoxCorners(bounds: THREE.Box3): THREE.Vector3[] {
+  const { min, max } = bounds;
+  return [
+    new THREE.Vector3(min.x, min.y, min.z),
+    new THREE.Vector3(min.x, min.y, max.z),
+    new THREE.Vector3(min.x, max.y, min.z),
+    new THREE.Vector3(min.x, max.y, max.z),
+    new THREE.Vector3(max.x, min.y, min.z),
+    new THREE.Vector3(max.x, min.y, max.z),
+    new THREE.Vector3(max.x, max.y, min.z),
+    new THREE.Vector3(max.x, max.y, max.z)
+  ];
 }

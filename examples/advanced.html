@@ -119,7 +119,7 @@
     import { Presenter, Toolbar } from '../src/index.ts';
 
     const presenter = new Presenter({ mount: 'viewer' });
-    const toolbar = new Toolbar(presenter, {
+    new Toolbar(presenter, {
       position: 'bottom-center',
       buttons: ['home', 'fit', 'zoomIn', 'zoomOut', 'measure', 'section', 'fullscreen']
     });

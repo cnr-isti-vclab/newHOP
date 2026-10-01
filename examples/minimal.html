@@ -15,7 +15,7 @@
     import { Presenter, Toolbar } from '../src/index.ts';
 
     const presenter = new Presenter({ mount: 'viewer' });
-    const toolbar = new Toolbar(presenter, { position: 'bottom-center' });
+    new Toolbar(presenter, { position: 'bottom-center' });
 
     presenter.measurement.setOnComplete((result) => {
       console.log('Measurement:', result.distance.toFixed(3), 'units');

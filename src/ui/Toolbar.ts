@@ -6,53 +6,84 @@ export type ToolbarPosition =
   | 'left-center' | 'right-center';
 
 export type ToolbarButtonId = 'home' | 'fit' | 'zoomIn' | 'zoomOut' | 'measure' | 'section' | 'fullscreen';
+export type ToolbarItemId = ToolbarButtonId | 'spacer' | 'hardrule';
+export type ToolbarIcon = string | Node;
+
+export interface ToolbarCustomButton {
+  kind: 'custom';
+  id: string;
+  label: string;
+  icon: ToolbarIcon;
+  onClick?: (event: MouseEvent) => void;
+  toggle?: boolean;
+  isActive?: () => boolean;
+}
+
+export type ToolbarItem = ToolbarItemId | ToolbarCustomButton;
 
 export interface ToolbarConfig {
   position?: ToolbarPosition;
-  buttons?: ToolbarButtonId[];
+  buttons?: ToolbarItem[];
   mount?: HTMLElement | string;
+  onCustomButton?: (id: string, event: MouseEvent) => void;
 }
 
-const DEFAULT_BUTTONS: ToolbarButtonId[] = ['home', 'fit', 'zoomIn', 'zoomOut', 'measure', 'section', 'fullscreen'];
+const DEFAULT_BUTTONS: ToolbarItem[] = ['home', 'fit', 'zoomIn', 'zoomOut', 'fullscreen'];
 
 interface ButtonSpec {
-  id: ToolbarButtonId;
+  kind: 'button';
+  key: string;
+  id: string;
   label: string;
-  icon: string;
+  icon: ToolbarIcon;
   toggle: boolean;
-  onClick: () => void;
+  onClick: (event: MouseEvent) => void;
   isActive: () => boolean;
 }
+
+interface LayoutSpec {
+  kind: 'spacer' | 'hardrule';
+  key: string;
+}
+
+type ToolbarSpec = ButtonSpec | LayoutSpec;
 
 const STYLE_ID = 'newhop-toolbar-styles';
 
 /** Minimal built-in on-screen toolbar, wired to a Presenter's public API. Opt-in: not created automatically. */
 export class Toolbar {
   private readonly element: HTMLDivElement;
-  private readonly specs: ButtonSpec[];
-  private readonly buttonEls = new Map<ToolbarButtonId, HTMLButtonElement>();
+  private readonly specs: ToolbarSpec[];
+  private readonly buttonEls = new Map<string, HTMLButtonElement>();
 
   constructor(private readonly presenter: Presenter, config: ToolbarConfig = {}) {
     injectStyles();
     const mount = resolveMount(config.mount) ?? presenter.container;
     anchorContainer(mount);
 
-    this.specs = (config.buttons ?? DEFAULT_BUTTONS).map((id) => this.createButtonSpec(id));
+    this.specs = this.createSpecs(config.buttons ?? DEFAULT_BUTTONS, config.onCustomButton);
 
     this.element = document.createElement('div');
     this.element.className = `newhop-toolbar newhop-toolbar--${config.position ?? 'bottom-center'}`;
     for (const spec of this.specs) {
+      if (spec.kind !== 'button') {
+        const layout = document.createElement('div');
+        layout.className = `newhop-toolbar__${spec.kind}`;
+        layout.setAttribute('aria-hidden', 'true');
+        this.element.appendChild(layout);
+        continue;
+      }
       const button = document.createElement('button');
       button.type = 'button';
       button.className = 'newhop-toolbar__button';
       button.title = spec.label;
       button.setAttribute('aria-label', spec.label);
-      button.innerHTML = spec.icon;
-      button.addEventListener('click', () => {
-        spec.onClick();
+      appendIcon(button, spec.icon);
+      button.addEventListener('click', (event) => {
+        spec.onClick(event);
         this.refresh();
       });
-      this.buttonEls.set(spec.id, button);
+      this.buttonEls.set(spec.key, button);
       this.element.appendChild(button);
     }
     mount.appendChild(this.element);
@@ -65,7 +96,8 @@ export class Toolbar {
 
   refresh(): void {
     for (const spec of this.specs) {
-      const button = this.buttonEls.get(spec.id);
+      if (spec.kind !== 'button') continue;
+      const button = this.buttonEls.get(spec.key);
       if (!button) continue;
       button.classList.toggle('newhop-toolbar__button--active', spec.toggle && spec.isActive());
     }
@@ -75,19 +107,42 @@ export class Toolbar {
     this.element.remove();
   }
 
+  private createSpecs(items: ToolbarItem[], onCustomButton: ToolbarConfig['onCustomButton']): ToolbarSpec[] {
+    const seen = new Set<string>();
+    const specs: ToolbarSpec[] = [];
+    for (const item of items) {
+      if (item === 'spacer' || item === 'hardrule') {
+        specs.push({ kind: item, key: item });
+        continue;
+      }
+      const key = typeof item === 'string' ? item : `custom:${item.id}`;
+      if (seen.has(key)) {
+        console.warn(`Toolbar item "${key}" is duplicated; keeping the first occurrence.`);
+        continue;
+      }
+      seen.add(key);
+      specs.push(typeof item === 'string'
+        ? this.createButtonSpec(item)
+        : this.createCustomButtonSpec(item, onCustomButton));
+    }
+    return specs;
+  }
+
   private createButtonSpec(id: ToolbarButtonId): ButtonSpec {
     const presenter = this.presenter;
     switch (id) {
       case 'home':
-        return { id, label: 'Reset view', icon: '⌂', toggle: false, onClick: () => presenter.trackball.reset(), isActive: () => false };
+        return { kind: 'button', key: id, id, label: 'Reset view', icon: '⌂', toggle: false, onClick: () => presenter.trackball.reset(), isActive: () => false };
       case 'fit':
-        return { id, label: 'Fit to scene', icon: '⤢', toggle: false, onClick: () => presenter.fitToScene(), isActive: () => false };
+        return { kind: 'button', key: id, id, label: 'Fit to scene', icon: '⤢', toggle: false, onClick: () => presenter.fitToScene(), isActive: () => false };
       case 'zoomIn':
-        return { id, label: 'Zoom in', icon: '+', toggle: false, onClick: () => presenter.trackball.dolly(0.8), isActive: () => false };
+        return { kind: 'button', key: id, id, label: 'Zoom in', icon: '+', toggle: false, onClick: () => presenter.trackball.dolly(0.8), isActive: () => false };
       case 'zoomOut':
-        return { id, label: 'Zoom out', icon: '–', toggle: false, onClick: () => presenter.trackball.dolly(1.25), isActive: () => false };
+        return { kind: 'button', key: id, id, label: 'Zoom out', icon: '–', toggle: false, onClick: () => presenter.trackball.dolly(1.25), isActive: () => false };
       case 'measure':
         return {
+          kind: 'button',
+          key: id,
           id,
           label: 'Measure distance',
           icon: '📏',
@@ -97,6 +152,8 @@ export class Toolbar {
         };
       case 'section':
         return {
+          kind: 'button',
+          key: id,
           id,
           label: 'Section plane',
           icon: '◐',
@@ -106,6 +163,8 @@ export class Toolbar {
         };
       case 'fullscreen':
         return {
+          kind: 'button',
+          key: id,
           id,
           label: 'Fullscreen',
           icon: '⛶',
@@ -114,6 +173,27 @@ export class Toolbar {
           isActive: () => document.fullscreenElement === presenter.container
         };
     }
+  }
+
+  private createCustomButtonSpec(item: ToolbarCustomButton, onCustomButton: ToolbarConfig['onCustomButton']): ButtonSpec {
+    return {
+      kind: 'button',
+      key: `custom:${item.id}`,
+      id: item.id,
+      label: item.label,
+      icon: item.icon,
+      toggle: item.toggle ?? false,
+      onClick: item.onClick ?? ((event) => onCustomButton?.(item.id, event)),
+      isActive: item.isActive ?? (() => false)
+    };
+  }
+}
+
+function appendIcon(button: HTMLButtonElement, icon: ToolbarIcon): void {
+  if (typeof icon === 'string') {
+    button.textContent = icon;
+  } else {
+    button.appendChild(icon.cloneNode(true));
   }
 }
 
@@ -177,6 +257,12 @@ function injectStyles(): void {
 }
 .newhop-toolbar__button:hover { background: rgba(255, 255, 255, 0.18); }
 .newhop-toolbar__button--active { background: #3a7bd5; color: #fff; }
+.newhop-toolbar__spacer { flex: 0 0 12px; width: 12px; height: 12px; }
+.newhop-toolbar__hardrule { flex: 0 0 auto; width: 1px; height: 22px; background: rgba(255, 255, 255, 0.28); }
+.newhop-toolbar--left-center .newhop-toolbar__spacer,
+.newhop-toolbar--right-center .newhop-toolbar__spacer { width: 12px; height: 12px; }
+.newhop-toolbar--left-center .newhop-toolbar__hardrule,
+.newhop-toolbar--right-center .newhop-toolbar__hardrule { width: 22px; height: 1px; }
 `;
   document.head.appendChild(style);
 }

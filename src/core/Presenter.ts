@@ -3,7 +3,7 @@ import { SparkRenderer } from '@sparkjsdev/spark';
 import type { AnimationClipInfo, EntityDefinition, EntityTransform, EntityTransformSnapshot, GeometryEntity, HelperDefinition, HotspotEntity, HotspotPrimitive, MaterialProperties, ModelEntity, ObjectAnimationOptions, ObjectAppearance, SceneDescription, SceneObjectDefinition, SceneTransform, SceneTransformSnapshot, SplatEntity, SpotAppearance, SpotDefinition, WorldBackground } from '../types/SceneTypes';
 import { EntityManager } from '../managers/EntityManager';
 import { ModelLoader } from '../loaders/ModelLoader';
-import { Trackball, type TrackballChangeListener, type TrackballStatus, type Viewpoint } from '../controls/Trackball';
+import { Trackball, type TrackballChangeListener, type TrackballStatus, type ViewDirection, type Viewpoint } from '../controls/Trackball';
 import { MeasurementManager } from '../managers/MeasurementManager';
 import { PickingManager } from '../managers/PickingManager';
 import { ClippingManager } from '../managers/ClippingManager';
@@ -140,7 +140,12 @@ export class Presenter {
       this.addHelper(id, helper);
     }
     await Promise.all(entityLoads);
-    this.fitToScene();
+    this.refreshSceneBounds();
+    this.trackball.fitToBounds(this.sceneBounds, {
+      updateStart: true,
+      direction: { azimuth: 0, elevation: 0 },
+      recenter: true
+    });
     if (navigation?.homeView) {
       this.trackball.setHomeView(navigation.homeView);
     }
@@ -238,9 +243,13 @@ export class Presenter {
     this.sceneBounds.makeEmpty();
   }
 
-  fitToScene(): void {
+  fitToScene(direction?: ViewDirection, recenter = false, duration = 0): void {
     this.refreshSceneBounds();
-    this.trackball.fitToBounds(this.sceneBounds);
+    this.trackball.fitToBounds(this.sceneBounds, {
+      direction,
+      recenter,
+      duration
+    });
   }
 
   getSceneBounds(): THREE.Box3 {

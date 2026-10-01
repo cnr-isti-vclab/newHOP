@@ -9,9 +9,9 @@ export { ClippingManager } from './managers/ClippingManager';
 export { LightingManager } from './managers/LightingManager';
 export type { FlashlightOrientation } from './managers/LightingManager';
 export { Trackball } from './controls/Trackball';
-export type { CameraViewpoint, TrackballChangeListener, TrackballConfig, TrackballMode, TrackballStatus, TurntableViewpoint, Viewpoint } from './controls/Trackball';
+export type { CameraViewpoint, FitOptions, TrackballChangeListener, TrackballConfig, TrackballMode, TrackballStatus, TurntableViewpoint, ViewDirection, Viewpoint } from './controls/Trackball';
 export { Toolbar } from './ui/Toolbar';
-export type { ToolbarButtonId, ToolbarConfig, ToolbarPosition } from './ui/Toolbar';
+export type { ToolbarButtonId, ToolbarConfig, ToolbarCustomButton, ToolbarIcon, ToolbarItem, ToolbarItemId, ToolbarPosition } from './ui/Toolbar';
 export type {
   EntityDefinition,
   AnimationClipInfo,
