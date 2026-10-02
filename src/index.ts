@@ -14,6 +14,8 @@ export { Toolbar } from './ui/Toolbar';
 export type { ToolbarButtonId, ToolbarConfig, ToolbarCustomButton, ToolbarIcon, ToolbarItem, ToolbarItemId, ToolbarPosition } from './ui/Toolbar';
 export type {
   EntityDefinition,
+  CameraProjection,
+  CameraType,
   AnimationClipInfo,
   AnimationLoopMode,
   EntityTransform,

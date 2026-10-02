@@ -158,12 +158,19 @@ export interface WorldConfig {
   background?: number | WorldBackground;
   sceneTransform?: SceneTransform;
   camera?: {
+    type?: CameraType;
     fov?: number;
     near?: number;
     far?: number;
   };
 }
 
+export type CameraType = 'perspective' | 'orthographic';
+export interface CameraProjection {
+  fov: number;
+  near: number;
+  far: number;
+}
 export type NavigationType = 'turntable' | 'sphere';
 export type UpAxis = 'y' | 'z';
 

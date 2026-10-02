@@ -83,7 +83,7 @@ export interface TrackballConfig {
 }
 
 export class Trackball {
-  private readonly camera: THREE.PerspectiveCamera;
+  private camera: THREE.Camera;
   private readonly element: HTMLElement;
   private readonly target = new THREE.Vector3();
   private readonly position = new THREE.Vector3(0, 0, 3);
@@ -112,12 +112,14 @@ export class Trackball {
   private rotateSpeed = 0.008;
   private panSpeed = 0.0015;
   private zoomSpeed = 0.001;
+  private perspectiveFov = 45;
   private azimuth = 0;
   private elevation = 0;
   private distance = 3;
+  private orthographicZoom = 1;
   private animation: { from: Viewpoint; to: Viewpoint; elapsed: number; duration: number } | undefined;
 
-  constructor(camera: THREE.PerspectiveCamera, element: HTMLElement, config: TrackballConfig = {}) {
+  constructor(camera: THREE.Camera, element: HTMLElement, config: TrackballConfig = {}) {
     this.camera = camera;
     this.element = element;
     this.mode = config.mode ?? 'turntable';
@@ -132,6 +134,7 @@ export class Trackball {
     this.rotateSpeed = config.rotateSpeed ?? 0.008;
     this.panSpeed = config.panSpeed ?? 0.0015;
     this.zoomSpeed = config.zoomSpeed ?? 0.001;
+    if (camera instanceof THREE.PerspectiveCamera) this.perspectiveFov = camera.fov;
     this.camera.up.set(0, this.upAxis === 'y' ? 1 : 0, this.upAxis === 'z' ? 1 : 0);
     this.element.style.touchAction = 'none';
     this.element.addEventListener('pointerdown', this.onPointerDown);
@@ -150,6 +153,26 @@ export class Trackball {
 
   getMode(): TrackballMode {
     return this.mode;
+  }
+
+  setCamera(camera: THREE.Camera): void {
+    if (camera instanceof THREE.OrthographicCamera && !(this.camera instanceof THREE.OrthographicCamera)) {
+      this.orthographicZoom = 1 / Math.max(
+        this.distance * Math.tan(THREE.MathUtils.degToRad(this.perspectiveFov / 2)),
+        Number.EPSILON
+      );
+    }
+    this.camera = camera;
+    this.applyOrbit();
+  }
+
+  getCamera(): THREE.Camera {
+    return this.camera;
+  }
+
+  setPerspectiveFov(fov: number): void {
+    this.perspectiveFov = fov;
+    if (this.camera instanceof THREE.OrthographicCamera) this.applyOrbit();
   }
 
   setUpAxis(upAxis: UpAxis): void {
@@ -277,6 +300,11 @@ export class Trackball {
 
   dolly(factor: number): void {
     this.animation = undefined;
+    if (this.camera instanceof THREE.OrthographicCamera) {
+      this.orthographicZoom = THREE.MathUtils.clamp(this.orthographicZoom / factor, 0.001, 1000000);
+      this.applyOrbit();
+      return;
+    }
     this.distance = THREE.MathUtils.clamp(this.distance * factor, this.minDistance, this.maxDistance);
     this.applyOrbit();
   }
@@ -285,6 +313,11 @@ export class Trackball {
     this.animation = undefined;
     this.target.copy(point);
     this.clampTarget();
+    if (this.camera instanceof THREE.OrthographicCamera) {
+      this.orthographicZoom = THREE.MathUtils.clamp(this.orthographicZoom / zoomFactor, 0.001, 1000000);
+      this.applyOrbit();
+      return;
+    }
     this.distance = THREE.MathUtils.clamp(this.distance * zoomFactor, this.minDistance, this.maxDistance);
     this.applyOrbit();
   }
@@ -309,14 +342,12 @@ export class Trackball {
       return;
     }
     const center = bounds.getCenter(new THREE.Vector3());
-    const verticalHalfAngle = THREE.MathUtils.degToRad(this.camera.fov / 2);
-    const horizontalHalfAngle = Math.atan(Math.tan(verticalHalfAngle) * this.camera.aspect);
     const target = options.recenter ? center : this.target.clone();
     target.x = THREE.MathUtils.clamp(target.x, this.minPan.x, this.maxPan.x);
     target.y = THREE.MathUtils.clamp(target.y, this.minPan.y, this.maxPan.y);
     target.z = THREE.MathUtils.clamp(target.z, this.minPan.z, this.maxPan.z);
     const distance = THREE.MathUtils.clamp(
-      calculateFitDistance(bounds, target, azimuth, elevation, this.upAxis, verticalHalfAngle, horizontalHalfAngle),
+      calculateFitDistance(bounds, target, azimuth, elevation, this.upAxis, this.camera, this.perspectiveFov),
       this.minDistance,
       this.maxDistance
     );
@@ -344,6 +375,12 @@ export class Trackball {
     this.elevation = THREE.MathUtils.clamp(THREE.MathUtils.degToRad(viewpoint.elevation), this.minElevation, this.maxElevation);
     this.distance = THREE.MathUtils.clamp(viewpoint.distance, this.minDistance, this.maxDistance);
     this.clampTarget();
+    if (this.camera instanceof THREE.OrthographicCamera) {
+      this.orthographicZoom = 1 / Math.max(
+        this.distance * Math.tan(THREE.MathUtils.degToRad(this.perspectiveFov / 2)),
+        Number.EPSILON
+      );
+    }
     this.applyOrbit();
   }
 
@@ -394,6 +431,13 @@ export class Trackball {
     if (updateStart) this.start = viewpoint;
     if (duration > 0) this.animateTo(viewpoint, duration);
     else this.jumpTo(viewpoint);
+  }
+
+  private getVisibleHalfHeight(): number {
+    if (this.camera instanceof THREE.OrthographicCamera) {
+      return 1 / Math.max(this.camera.zoom, Number.EPSILON);
+    }
+    return this.distance * Math.tan(THREE.MathUtils.degToRad(this.perspectiveFov / 2));
   }
 
   update(deltaTime: number): void {
@@ -450,10 +494,7 @@ export class Trackball {
   private readonly onWheel = (event: WheelEvent): void => {
     if (!this.navigationEnabled) return;
     event.preventDefault();
-    this.animation = undefined;
-    this.distance *= Math.exp(event.deltaY * this.zoomSpeed);
-    this.distance = THREE.MathUtils.clamp(this.distance, this.minDistance, this.maxDistance);
-    this.applyOrbit();
+    this.dolly(Math.exp(event.deltaY * this.zoomSpeed));
   };
 
   private readonly onContextMenu = (event: MouseEvent): void => {
@@ -521,6 +562,10 @@ export class Trackball {
     }
     this.camera.position.copy(this.position);
     this.camera.lookAt(this.target);
+    if (this.camera instanceof THREE.OrthographicCamera) {
+      this.camera.zoom = this.orthographicZoom;
+      this.camera.updateProjectionMatrix();
+    }
     this.emitChange();
   }
 
@@ -575,23 +620,32 @@ function calculateFitDistance(
   azimuth: number,
   elevation: number,
   upAxis: UpAxis,
-  verticalHalfAngle: number,
-  horizontalHalfAngle: number
+  camera: THREE.Camera,
+  perspectiveFov: number
 ): number {
   const basis = getOrbitBasis(azimuth, elevation, upAxis);
+  const aspect = camera instanceof THREE.OrthographicCamera
+    ? (camera.right - camera.left) / (camera.top - camera.bottom)
+    : (camera as THREE.PerspectiveCamera).aspect;
+  const verticalHalfAngle = THREE.MathUtils.degToRad(perspectiveFov / 2);
+  const horizontalHalfAngle = Math.atan(Math.tan(verticalHalfAngle) * aspect);
   let distance = 0;
+  let orthographicHalfHeight = 0;
   for (const corner of getBoxCorners(bounds)) {
     const relative = corner.sub(target);
     const depth = relative.dot(basis.forward);
     const horizontal = Math.abs(relative.dot(basis.right));
     const vertical = Math.abs(relative.dot(basis.up));
+    orthographicHalfHeight = Math.max(orthographicHalfHeight, vertical, horizontal / aspect);
     distance = Math.max(
       distance,
       horizontal / Math.tan(horizontalHalfAngle) - depth,
       vertical / Math.tan(verticalHalfAngle) - depth
     );
   }
-  return distance;
+  return camera instanceof THREE.OrthographicCamera
+    ? orthographicHalfHeight / Math.tan(verticalHalfAngle)
+    : distance;
 }
 
 function getOrbitBasis(azimuth: number, elevation: number, upAxis: UpAxis): {

@@ -100,6 +100,16 @@
       cursor: pointer;
       font: inherit;
     }
+    .camera-controls { display: grid; gap: 8px; margin-top: 8px; }
+    .camera-controls button {
+      border: 1px solid rgba(148, 163, 184, 0.45);
+      border-radius: 5px;
+      padding: 5px 7px;
+      background: rgba(30, 41, 59, 0.9);
+      color: inherit;
+      cursor: pointer;
+      font: inherit;
+    }
   </style>
 </head>
 <body>
@@ -121,7 +131,7 @@
     const presenter = new Presenter({ mount: 'viewer' });
     new Toolbar(presenter, {
       position: 'bottom-center',
-      buttons: ['home', 'fit', 'zoomIn', 'zoomOut', 'measure', 'section', 'fullscreen']
+      buttons: ['home', 'fit', 'zoomIn', 'zoomOut', 'camera']
     });
 
     presenter.measurement.setOnComplete((result) => {
@@ -257,8 +267,52 @@
       container.append(row);
     }
 
+    function buildCameraControls() {
+      const section = document.createElement('section');
+      section.className = 'appearance-model';
+      section.innerHTML = '<h3>Camera</h3>';
+
+      const projectionButton = document.createElement('button');
+      projectionButton.type = 'button';
+      const updateProjectionButton = () => {
+        projectionButton.textContent = `Switch to ${presenter.getCameraType() === 'perspective' ? 'orthographic' : 'perspective'}`;
+      };
+      projectionButton.addEventListener('click', () => {
+        presenter.setCameraType(presenter.getCameraType() === 'perspective' ? 'orthographic' : 'perspective');
+        updateProjectionButton();
+      });
+
+      const fovRow = document.createElement('div');
+      fovRow.className = 'appearance-row';
+      const fovLabel = document.createElement('label');
+      fovLabel.textContent = 'FOV';
+      const fovInput = document.createElement('input');
+      fovInput.type = 'range';
+      fovInput.min = '20';
+      fovInput.max = '90';
+      fovInput.step = '1';
+      fovInput.value = String(presenter.getCameraProjection().fov);
+      const fovValue = document.createElement('span');
+      fovValue.className = 'appearance-value';
+      fovValue.textContent = `${fovInput.value}°`;
+      fovInput.addEventListener('input', () => {
+        const fov = Number(fovInput.value);
+        fovValue.textContent = `${fov}°`;
+        presenter.setCameraProjection({ fov });
+      });
+      fovRow.append(fovLabel, fovInput, fovValue);
+
+      const controls = document.createElement('div');
+      controls.className = 'camera-controls';
+      controls.append(projectionButton, fovRow);
+      section.append(controls);
+      updateProjectionButton();
+      appearancePanel.append(section);
+    }
+
     function buildAppearancePanel() {
       appearancePanel.innerHTML = '<h2>Model appearance</h2><p>Toggle reversible material modifiers for each model.</p>';
+      buildCameraControls();
       for (const [id, labelText] of appearanceModels) {
         const appearance = presenter.getObjectAppearance(id);
         const section = document.createElement('section');

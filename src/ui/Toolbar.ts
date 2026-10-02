@@ -5,7 +5,7 @@ export type ToolbarPosition =
   | 'bottom-left' | 'bottom-center' | 'bottom-right'
   | 'left-center' | 'right-center';
 
-export type ToolbarButtonId = 'home' | 'fit' | 'zoomIn' | 'zoomOut' | 'measure' | 'section' | 'fullscreen';
+export type ToolbarButtonId = 'home' | 'fit' | 'zoomIn' | 'zoomOut' | 'measure' | 'section' | 'camera' | 'fullscreen';
 export type ToolbarItemId = ToolbarButtonId | 'spacer' | 'hardrule';
 export type ToolbarIcon = string | Node;
 
@@ -160,6 +160,17 @@ export class Toolbar {
           toggle: true,
           onClick: () => presenter.clipping.toggle(),
           isActive: () => presenter.clipping.isEnabled()
+        };
+      case 'camera':
+        return {
+          kind: 'button',
+          key: id,
+          id,
+          label: 'Toggle camera projection',
+          icon: '◉',
+          toggle: true,
+          onClick: () => presenter.setCameraType(presenter.getCameraType() === 'perspective' ? 'orthographic' : 'perspective'),
+          isActive: () => presenter.getCameraType() === 'orthographic'
         };
       case 'fullscreen':
         return {

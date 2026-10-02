@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { SparkRenderer } from '@sparkjsdev/spark';
-import type { AnimationClipInfo, EntityDefinition, EntityTransform, EntityTransformSnapshot, GeometryEntity, HelperDefinition, HotspotEntity, HotspotPrimitive, MaterialProperties, ModelEntity, ObjectAnimationOptions, ObjectAppearance, SceneDescription, SceneObjectDefinition, SceneTransform, SceneTransformSnapshot, SplatEntity, SpotAppearance, SpotDefinition, WorldBackground } from '../types/SceneTypes';
+import type { AnimationClipInfo, CameraProjection, CameraType, EntityDefinition, EntityTransform, EntityTransformSnapshot, GeometryEntity, HelperDefinition, HotspotEntity, HotspotPrimitive, MaterialProperties, ModelEntity, ObjectAnimationOptions, ObjectAppearance, SceneDescription, SceneObjectDefinition, SceneTransform, SceneTransformSnapshot, SplatEntity, SpotAppearance, SpotDefinition, WorldBackground } from '../types/SceneTypes';
 import { EntityManager } from '../managers/EntityManager';
 import { ModelLoader } from '../loaders/ModelLoader';
 import { Trackball, type TrackballChangeListener, type TrackballStatus, type ViewDirection, type Viewpoint } from '../controls/Trackball';
@@ -29,7 +29,9 @@ export type SpotClickListener = (event: SpotClickEvent) => void;
 
 export class Presenter {
   readonly scene: THREE.Scene;
-  readonly camera: THREE.PerspectiveCamera;
+  camera: THREE.Camera;
+  readonly perspectiveCamera: THREE.PerspectiveCamera;
+  readonly orthographicCamera: THREE.OrthographicCamera;
   readonly renderer: THREE.WebGLRenderer;
   readonly trackball: Trackball;
   readonly measurement: MeasurementManager;
@@ -58,14 +60,21 @@ export class Presenter {
   private spotClickMoved = false;
   private readonly spotClickListeners = new Set<SpotClickListener>();
   private sparkRenderer?: SparkRenderer;
+  private cameraType: CameraType = 'perspective';
+  private cameraRangeMode: 'auto' | 'explicit' = 'auto';
+  private cameraNear = 0.01;
+  private cameraFar = 1000;
 
   onSpotClicked?: (id: string, event: SpotClickEvent) => void;
 
   constructor(config: PresenterConfig) {
     this.mount = resolveMount(config.mount);
     this.scene = new THREE.Scene();
-    this.camera = new THREE.PerspectiveCamera(45, 1, 0.01, 1000);
-    this.camera.position.set(0, 0, 3);
+    this.perspectiveCamera = new THREE.PerspectiveCamera(45, 1, this.cameraNear, this.cameraFar);
+    this.orthographicCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, this.cameraNear, this.cameraFar);
+    this.camera = this.perspectiveCamera;
+    this.perspectiveCamera.position.set(0, 0, 3);
+    this.orthographicCamera.position.set(0, 0, 3);
     this.renderer = new THREE.WebGLRenderer({
       antialias: config.antialias ?? true,
       alpha: config.alpha ?? false
@@ -75,7 +84,7 @@ export class Presenter {
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.localClippingEnabled = true;
     this.mount.appendChild(this.renderer.domElement);
-    this.scene.add(this.camera);
+    this.scene.add(this.perspectiveCamera);
     this.trackball = new Trackball(this.camera, this.renderer.domElement);
     this.measurement = new MeasurementManager(this.root, this.camera, this.renderer.domElement);
     this.picking = new PickingManager(this.root, this.camera, this.renderer.domElement);
@@ -113,12 +122,19 @@ export class Presenter {
       this.lighting.setFlashlight(lighting.flashlight ?? { enabled: false });
     }
     const world = sceneDescription.world;
-    if (world?.camera) {
-      this.camera.fov = world.camera.fov ?? this.camera.fov;
-      this.camera.near = world.camera.near ?? this.camera.near;
-      this.camera.far = world.camera.far ?? this.camera.far;
-      this.camera.updateProjectionMatrix();
+    this.cameraRangeMode = 'auto';
+    this.setCameraType(world?.camera?.type ?? 'perspective');
+    if (world?.camera?.fov !== undefined) this.perspectiveCamera.fov = world.camera.fov;
+    this.trackball.setPerspectiveFov(this.perspectiveCamera.fov);
+    if (world?.camera?.near !== undefined || world?.camera?.far !== undefined) {
+      const near = world.camera.near ?? this.cameraNear;
+      const far = world.camera.far ?? this.cameraFar;
+      validateCameraClipping(near, far);
+      this.cameraNear = near;
+      this.cameraFar = far;
+      this.cameraRangeMode = 'explicit';
     }
+    this.applyCameraProjection();
     const navigation = sceneDescription.navigation;
     this.trackball.setUpAxis(navigation?.upAxis ?? 'y');
     if (world?.background !== undefined) await this.setBackground(world.background);
@@ -290,6 +306,40 @@ export class Presenter {
     this.refreshSceneBounds();
   }
 
+  getCameraType(): CameraType {
+    return this.cameraType;
+  }
+
+  setCameraType(type: CameraType): void {
+    if (type === this.cameraType) return;
+    const previous = this.camera;
+    const next = type === 'perspective' ? this.perspectiveCamera : this.orthographicCamera;
+    this.trackball.setCamera(next);
+    this.camera = next;
+    this.cameraType = type;
+    this.scene.remove(previous);
+    this.scene.add(next);
+    this.measurement.setCamera(next);
+    this.picking.setCamera(next);
+    this.lighting.setCamera(next);
+    this.applyCameraProjection();
+  }
+
+  getCameraProjection(): CameraProjection {
+    return { fov: this.perspectiveCamera.fov, near: this.cameraNear, far: this.cameraFar };
+  }
+
+  setCameraProjection(update: Partial<CameraProjection>): void {
+    const next = { ...this.getCameraProjection(), ...update };
+    validateCameraProjection(next);
+    this.perspectiveCamera.fov = next.fov;
+    this.cameraNear = next.near;
+    this.cameraFar = next.far;
+    this.cameraRangeMode = 'explicit';
+    this.trackball.setPerspectiveFov(next.fov);
+    this.applyCameraProjection();
+  }
+
   getNavigationStatus(): TrackballStatus {
     return this.trackball.getStatus();
   }
@@ -328,10 +378,29 @@ export class Presenter {
   }
 
   private updateCameraRange(): void {
-    const radius = this.sceneBounds.isEmpty() ? 1 : this.sceneBounds.getSize(new THREE.Vector3()).length() / 2;
-    this.camera.near = Math.max(radius / 10000, 0.000001);
-    this.camera.far = Math.max(radius * 100, this.camera.near + 1);
-    this.camera.updateProjectionMatrix();
+    if (this.cameraRangeMode === 'auto') {
+      const radius = this.sceneBounds.isEmpty() ? 1 : this.sceneBounds.getSize(new THREE.Vector3()).length() / 2;
+      this.cameraNear = Math.max(radius / 10000, 0.000001);
+      this.cameraFar = Math.max(radius * 100, this.cameraNear + 1);
+    }
+    this.applyCameraProjection();
+  }
+
+  private applyCameraProjection(): void {
+    const width = this.mount.clientWidth || 1;
+    const height = this.mount.clientHeight || 1;
+    const aspect = width / height;
+    this.perspectiveCamera.aspect = aspect;
+    this.perspectiveCamera.near = this.cameraNear;
+    this.perspectiveCamera.far = this.cameraFar;
+    this.perspectiveCamera.updateProjectionMatrix();
+    this.orthographicCamera.left = -aspect;
+    this.orthographicCamera.right = aspect;
+    this.orthographicCamera.top = 1;
+    this.orthographicCamera.bottom = -1;
+    this.orthographicCamera.near = this.cameraNear;
+    this.orthographicCamera.far = this.cameraFar;
+    this.orthographicCamera.updateProjectionMatrix();
   }
 
   private addHelper(id: string, definition: HelperDefinition): void {
@@ -517,8 +586,7 @@ export class Presenter {
   private readonly resize = (): void => {
     const width = this.mount.clientWidth || 1;
     const height = this.mount.clientHeight || 1;
-    this.camera.aspect = width / height;
-    this.camera.updateProjectionMatrix();
+    this.applyCameraProjection();
     this.renderer.setSize(width, height, false);
     this.renderer.domElement.style.width = `${width}px`;
     this.renderer.domElement.style.height = `${height}px`;
@@ -669,6 +737,19 @@ function resolveMount(mount: HTMLElement | string): HTMLElement {
   const element = document.getElementById(mount);
   if (!element) throw new Error(`Mount element "${mount}" was not found.`);
   return element;
+}
+
+function validateCameraClipping(near: number, far: number): void {
+  if (!Number.isFinite(near) || !Number.isFinite(far) || near <= 0 || far <= near) {
+    throw new Error(`Invalid camera clipping range: near must be positive and far must be greater than near.`);
+  }
+}
+
+function validateCameraProjection(projection: CameraProjection): void {
+  if (!Number.isFinite(projection.fov) || projection.fov <= 0 || projection.fov >= 180) {
+    throw new Error(`Invalid camera FOV: expected a value between 0 and 180 degrees.`);
+  }
+  validateCameraClipping(projection.near, projection.far);
 }
 
 function toObjectEntity(id: string, definition: SceneObjectDefinition): ModelEntity | SplatEntity | GeometryEntity {

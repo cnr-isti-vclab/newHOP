@@ -40,14 +40,14 @@ export interface SceneLightingDescription {
 
 export class LightingManager {
   private readonly scene: THREE.Scene;
-  private readonly camera: THREE.PerspectiveCamera;
+  private camera: THREE.Camera;
   private readonly getUpAxis: () => UpAxis;
   private readonly sceneLights = new Map<string, THREE.Light>();
   private readonly sceneLightDefinitions = new Map<string, SceneLightDefinition>();
   private flashlight: THREE.DirectionalLight;
   private flashlightConfig: Required<FlashlightConfig>;
 
-  constructor(scene: THREE.Scene, camera: THREE.PerspectiveCamera, getUpAxis: () => UpAxis = () => 'y') {
+  constructor(scene: THREE.Scene, camera: THREE.Camera, getUpAxis: () => UpAxis = () => 'y') {
     this.scene = scene;
     this.camera = camera;
     this.getUpAxis = getUpAxis;
@@ -68,6 +68,14 @@ export class LightingManager {
       ['default-hemisphere', { type: 'hemisphere', color: 0xffffff, groundColor: 0x444444, intensity: 1.2, position: [0, 1, 0] }],
       ['default-key', { type: 'directional', color: 0xffffff, intensity: 1.5, position: [2, 3, 4], target: [0, 0, 0] }]
     ]);
+  }
+
+  setCamera(camera: THREE.Camera): void {
+    this.camera.remove(this.flashlight);
+    this.camera.remove(this.flashlight.target);
+    this.camera = camera;
+    this.camera.add(this.flashlight);
+    this.camera.add(this.flashlight.target);
   }
 
   setSceneLights(sceneLights: Record<string, SceneLightDefinition> = {}): void {

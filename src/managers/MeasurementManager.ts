@@ -16,7 +16,7 @@ export interface MeasurementResult {
 
 export class MeasurementManager {
   private readonly root: THREE.Object3D;
-  private readonly camera: THREE.PerspectiveCamera;
+  private camera: THREE.Camera;
   private readonly element: HTMLElement;
   private readonly raycaster = new THREE.Raycaster();
   private readonly points: MeasurementHit[] = [];
@@ -24,11 +24,15 @@ export class MeasurementManager {
   private enabled = false;
   private onComplete?: (result: MeasurementResult) => void;
 
-  constructor(root: THREE.Object3D, camera: THREE.PerspectiveCamera, element: HTMLElement) {
+  constructor(root: THREE.Object3D, camera: THREE.Camera, element: HTMLElement) {
     this.root = root;
     this.camera = camera;
     this.element = element;
     this.root.add(this.visualGroup);
+  }
+
+  setCamera(camera: THREE.Camera): void {
+    this.camera = camera;
   }
 
   setEnabled(enabled: boolean): void {

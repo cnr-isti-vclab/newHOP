@@ -8,16 +8,20 @@ export interface PickResult {
 
 export class PickingManager {
   private readonly root: THREE.Object3D;
-  private readonly camera: THREE.PerspectiveCamera;
+  private camera: THREE.Camera;
   private readonly element: HTMLElement;
   private readonly raycaster = new THREE.Raycaster();
   private enabled = false;
   private onPick?: (result: PickResult) => void;
 
-  constructor(root: THREE.Object3D, camera: THREE.PerspectiveCamera, element: HTMLElement) {
+  constructor(root: THREE.Object3D, camera: THREE.Camera, element: HTMLElement) {
     this.root = root;
     this.camera = camera;
     this.element = element;
+  }
+
+  setCamera(camera: THREE.Camera): void {
+    this.camera = camera;
   }
 
   setEnabled(enabled: boolean): void {

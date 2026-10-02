@@ -32,6 +32,30 @@
     <p class="lede">The navigation block configures the camera interaction model. The current implementation is a custom turntable trackball with object-in-hand behavior, scene-aware fitting, authored limits, and programmatic viewpoint control.</p>
 
 <!------------------------------------------------------------------------------------------------------------->
+    <h2>Camera Projection</h2>
+    <p>Projection belongs to the world camera, while movement belongs to navigation. Perspective is the default; an orthographic camera can be selected in the same declaration.</p>
+    <pre><code>world: {
+  camera: {
+    type: 'perspective',
+    fov: 42,
+    near: 0.01,
+    far: 1000
+  }
+}</code></pre>
+    <table>
+      <thead><tr><th>Property</th><th>Meaning</th><th>Default</th></tr></thead>
+      <tbody>
+        <tr><td><code>type</code></td><td><code>'perspective'</code> or <code>'orthographic'</code>.</td><td><code>'perspective'</code></td></tr>
+        <tr><td><code>fov</code></td><td>Perspective vertical field of view in degrees. It also provides the scale reference when matching the two projections.</td><td><code>45</code></td></tr>
+        <tr><td><code>near</code>, <code>far</code></td><td>Camera clipping distances. If omitted, they are derived automatically from scene bounds.</td><td>Automatic</td></tr>
+      </tbody>
+    </table>
+    <p>Switch projection or update these values at runtime through the Presenter. Switching preserves the navigation target and viewing direction while matching the apparent scale at the current target plane.</p>
+    <pre><code>presenter.setCameraType('orthographic');
+presenter.setCameraProjection({ fov: 55, near: 0.1, far: 5000 });
+const projection = presenter.getCameraProjection();</code></pre>
+
+<!------------------------------------------------------------------------------------------------------------->
     <h2>Navigation configuration example</h2>
     <p>Example configuration for the navigation block, specifying the type, limits, and initial view.</p>
     <pre><code>
