@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>newHOP world</title>
+  <style>
+    :root { color-scheme: dark; --bg: #0b1120; --panel: #111827; --panel-2: #1f2937; --text: #e5e7eb; --muted: #aab4c3; --accent: #7dd3fc; --line: rgba(148, 163, 184, 0.24); }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: linear-gradient(145deg, #0b1120, #172033); color: var(--text); font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.6; }
+    main { width: min(980px, calc(100vw - 32px)); margin: 0 auto; padding: 44px 0 72px; }
+    nav { margin-bottom: 28px; } a { color: var(--accent); }
+    h1 { margin: 0 0 8px; font-size: clamp(2rem, 5vw, 3.2rem); }
+    h2 { margin: 42px 0 12px; font-size: 1.55rem; }
+    .lede, .note { color: var(--muted); }
+    .note { padding: 14px 16px; border-left: 3px solid var(--accent); background: rgba(17, 24, 39, 0.8); }
+    pre { overflow-x: auto; margin: 14px 0 20px; padding: 16px; border: 1px solid var(--line); border-radius: 8px; background: #080d18; color: #dbeafe; }
+    code { font-family: Consolas, "Courier New", monospace; font-size: 0.92em; }
+    table { width: 100%; border-collapse: collapse; margin: 12px 0 24px; background: rgba(17, 24, 39, 0.66); }
+    th, td { padding: 10px 12px; border: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { color: var(--accent); font-weight: 600; }
+  </style>
+</head>
+<body>
+  <main>
+    <nav><a href="index.html">Documentation index</a> · <a href="../index.html">Examples</a></nav>
+    <h1>World</h1>
+    <p class="lede">The <code>world</code> block defines the scene background, camera projection, and transforms applied to all authored content. Camera movement and interaction settings belong to the separate <code>navigation</code> block.</p>
+
+    <h2>Background</h2>
+    <p>Set a solid background with a hexadecimal color number or an object containing <code>color</code>. An image background uses an equirectangular image; its URL is resolved relative to the document URL.</p>
+    <pre><code>world: {
+  background: 0x202b3c
+}
+
+// Or use an equirectangular image
+world: {
+  background: {
+    file: 'media/environment.jpg',
+    azimuth: -90
+  }
+}</code></pre>
+    <p>The image azimuth is in degrees. Its vertical orientation follows <code>navigation.upAxis</code>. A background image is displayed as the scene background; environment lighting is configured separately through the <a href="illumination.html">lighting block</a>.</p>
+
+    <h2>Camera Projection</h2>
+    <p>Perspective is the default projection. Select orthographic projection through <code>world.camera.type</code>. Projection belongs to the world camera, while movement and orbit behavior belong to navigation.</p>
+    <pre><code>world: {
+  camera: {
+    type: 'perspective',
+    fov: 42,
+    near: 0.01,
+    far: 1000
+  }
+}</code></pre>
+    <table>
+      <thead><tr><th>Property</th><th>Meaning</th><th>Default</th></tr></thead>
+      <tbody>
+        <tr><td><code>type</code></td><td><code>'perspective'</code> or <code>'orthographic'</code>.</td><td><code>'perspective'</code></td></tr>
+        <tr><td><code>fov</code></td><td>Perspective vertical field of view in degrees. It also provides the scale reference when matching the two projections.</td><td><code>45</code></td></tr>
+        <tr><td><code>near</code>, <code>far</code></td><td>Camera clipping distances. If both are omitted, newHOP derives them from scene bounds. Supplying either value makes the range explicit; an omitted counterpart uses its default.</td><td><code>0.01</code>, <code>1000</code> when explicit; otherwise automatic</td></tr>
+      </tbody>
+    </table>
+    <p>Switch projection or update these values at runtime through the Presenter. Switching preserves the navigation target and viewing direction while matching the apparent scale at the current target plane.</p>
+    <pre><code>presenter.setCameraType('orthographic');
+presenter.setCameraProjection({ fov: 55, near: 0.1, far: 5000 });
+const projection = presenter.getCameraProjection();</code></pre>
+
+    <h2>Content alignment</h2>
+    <p>Use <code>world.sceneTransform</code> to align all authored content without rotating the camera, base grid, axes, or explicit world-space section planes. This transform is applied above each object's local transform and is included in scene bounds, picking, and measurements.</p>
+    <pre><code>world: {
+  sceneTransform: {
+    rotation: [0, 0, 20]
+  }
+}</code></pre>
+    <p>Component transforms use degrees and may specify <code>position</code>, <code>rotation</code>, or <code>scale</code>. A column-major 4x4 <code>matrix</code> can be used instead; when present, it overrides the component fields.</p>
+    <p>Update or inspect the transform at runtime with <code>presenter.setSceneTransform(update)</code> and <code>presenter.getSceneTransform()</code>.</p>
+  </main>
+</body>
+</html>

@@ -121,6 +121,7 @@ Gaussian splat scenes need the global bundle and their local `.ply` files. newHO
 ## Documentation
 
 - [Object authoring](docs/objects.html)
+- [World configuration](docs/world.html)
 - [Navigation](docs/navigation.html)
 - [Spots](docs/spots.html)
 - [Architecture](docs/architecture.md)
