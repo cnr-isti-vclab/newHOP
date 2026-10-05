@@ -89,17 +89,6 @@
     }
     .appearance-row input[type="range"] { width: 100px; }
     .appearance-value { color: #94a3b8; min-width: 34px; text-align: right; }
-    .animation-controls { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
-    .animation-controls button,
-    .animation-controls select {
-      border: 1px solid rgba(148, 163, 184, 0.45);
-      border-radius: 5px;
-      padding: 5px 7px;
-      background: rgba(30, 41, 59, 0.9);
-      color: inherit;
-      cursor: pointer;
-      font: inherit;
-    }
     .camera-controls { display: grid; gap: 8px; margin-top: 8px; }
     .camera-controls button {
       border: 1px solid rgba(148, 163, 184, 0.45);
@@ -354,65 +343,6 @@
         section.append(alphaRow);
         appearancePanel.append(section);
       }
-      buildAnimationControls();
-    }
-
-    function buildAnimationControls() {
-      const clips = presenter.getObjectAnimations('animated');
-      const section = document.createElement('section');
-      section.className = 'appearance-model';
-      section.innerHTML = '<h3>Animated GLB</h3>';
-      if (clips.length === 0) {
-        section.append('No animations available.');
-        appearancePanel.append(section);
-        return;
-      }
-
-      const clip = clips[0];
-      const select = document.createElement('select');
-      for (const item of clips) {
-        const option = document.createElement('option');
-        option.value = item.name;
-        option.textContent = `${item.name} (${item.duration.toFixed(2)}s)`;
-        select.append(option);
-      }
-
-      const mode = document.createElement('select');
-      for (const value of ['loop', 'once', 'pingpong']) {
-        const option = document.createElement('option');
-        option.value = value;
-        option.textContent = value;
-        mode.append(option);
-      }
-
-      const controls = document.createElement('div');
-      controls.className = 'animation-controls';
-      const addButton = (label, onClick) => {
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.textContent = label;
-        button.addEventListener('click', onClick);
-        controls.append(button);
-      };
-      addButton('Play', () => presenter.playObjectAnimation('animated', select.value, { mode: mode.value }));
-      addButton('Pause', () => presenter.pauseObjectAnimation('animated'));
-      addButton('Stop', () => presenter.stopObjectAnimation('animated'));
-
-      const scrub = document.createElement('input');
-      scrub.type = 'range';
-      scrub.min = '0';
-      scrub.max = String(clip.duration);
-      scrub.step = '0.01';
-      scrub.value = '0';
-      scrub.addEventListener('input', () => presenter.setObjectAnimationTime('animated', select.value, Number(scrub.value)));
-      select.addEventListener('change', () => {
-        const selected = clips.find((item) => item.name === select.value) ?? clip;
-        scrub.max = String(selected.duration);
-        scrub.value = '0';
-        presenter.setObjectAnimationTime('animated', selected.name, 0);
-      });
-      section.append(select, mode, controls, scrub);
-      appearancePanel.append(section);
     }
 
     presenter.onSceneReady(buildAppearancePanel);
