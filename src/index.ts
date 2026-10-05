@@ -1,3 +1,4 @@
+export { VERSION } from './version';
 export { Presenter } from './core/Presenter';
 export type { PresenterConfig, SceneReadyListener, SpotClickEvent, SpotClickListener } from './core/Presenter';
 export { ModelLoader } from './loaders/ModelLoader';

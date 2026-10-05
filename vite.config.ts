@@ -2,8 +2,11 @@ import { defineConfig } from 'vite';
 import { createReadStream, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
+const packageVersion = (JSON.parse(readFileSync(resolve(__dirname, 'package.json'), 'utf8')) as { version: string }).version;
+
 export default defineConfig(({ mode }) => ({
   define: {
+    __NEWHOP_VERSION__: JSON.stringify(packageVersion),
     __NEWHOP_LIBRARY_URL__: mode === 'global'
       ? 'document.currentScript.src'
       : mode === 'esm'

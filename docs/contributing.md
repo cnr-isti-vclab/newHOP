@@ -23,6 +23,17 @@ npm run build
 
 The build performs TypeScript checking, creates ESM and global bundles, and refreshes `minimal/lib/`.
 
+## Updating the Version
+
+The version logged by each `Presenter` comes from the `version` field in `package.json`. Use a valid npm/SemVer version with three numeric components, such as `2026.0.2`. To update the version and keep `package-lock.json` in sync, run:
+
+```text
+npm version 2026.0.2 --no-git-tag-version
+npm run build
+```
+
+Replace `2026.0.2` with the intended version. The first command updates the package and lockfile without creating a Git tag; the build injects the new value into the generated bundles. Create a Git tag or GitHub Release separately if needed.
+
 When the workspace root is `newHOP`, use the configured tasks:
 
 - `newHOP: Typecheck`

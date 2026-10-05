@@ -17,7 +17,7 @@ Presenter
   |-- scene / camera / renderer
 ```
 
-The Presenter owns the scene lifecycle and coordinates managers. Managers own focused behavior and should not reach into unrelated managers. UI components such as `Toolbar` are optional API clients: they are distributed separately from the Presenter class, and applications may replace them with custom controls that call the same public methods.
+The Presenter owns the scene lifecycle and coordinates managers. Managers own focused behavior and should not reach into unrelated managers. UI components such as `Toolbar` are optional API clients: they are distributed separately from the Presenter class, and applications may replace them with custom controls that call the same public methods. The package version is exported as `VERSION` and logged to the browser console whenever a Presenter is constructed.
 
 The renderer enables antialiasing and shadow maps by default. Pass `shadows: false` to the `Presenter` constructor to disable shadow rendering for lightweight scenes. Runtime meshes cast and receive shadows automatically; individual scene lights opt into shadow casting with `castShadow: true`. The Presenter owns spot click semantics: it resolves hotspot entities through the shared picking raycaster and dispatches only completed primary-button clicks, keeping navigation drags from activating spots. Applications can use the compatibility `onSpotClicked` callback or the `spotclick` subscription event.
 

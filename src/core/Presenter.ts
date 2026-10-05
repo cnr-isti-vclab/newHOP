@@ -8,6 +8,7 @@ import { MeasurementManager } from '../managers/MeasurementManager';
 import { PickingManager } from '../managers/PickingManager';
 import { ClippingManager } from '../managers/ClippingManager';
 import { LightingManager, type SceneLightingDescription } from '../managers/LightingManager';
+import { VERSION } from '../version';
 
 export interface PresenterConfig {
   mount: HTMLElement | string;
@@ -68,6 +69,7 @@ export class Presenter {
   onSpotClicked?: (id: string, event: SpotClickEvent) => void;
 
   constructor(config: PresenterConfig) {
+    console.info(`newHOP v${VERSION}`);
     this.mount = resolveMount(config.mount);
     this.scene = new THREE.Scene();
     this.perspectiveCamera = new THREE.PerspectiveCamera(45, 1, this.cameraNear, this.cameraFar);
