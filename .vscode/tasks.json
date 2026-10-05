@@ -32,9 +32,24 @@
       }
     },
     {
-      "label": "newHOP: Start dev server",
+      "label": "newHOP: Start dev server (local)",
       "type": "shell",
       "command": "npm run dev -- --host 127.0.0.1",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "new",
+        "clear": true
+      }
+    },
+    {
+      "label": "newHOP: Start dev server (LAN)",
+      "type": "shell",
+      "command": "npm run dev -- --host 0.0.0.0",
       "options": {
         "cwd": "${workspaceFolder}"
       },
