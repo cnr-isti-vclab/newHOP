@@ -3,22 +3,34 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>newHOP</title>
+  <title>newHOP - Heritage Online Presenter</title>
   <style>
     html, body, #viewer { width: 100%; height: 100%; margin: 0; }
-    body { overflow: hidden; background: #1c2024; }
+    body { overflow: hidden; background: #6d8296; }
   </style>
 </head>
 <body>
   <div id="viewer"></div>
-  <script src="lib/newhop.global.js"></script>
+  <script src="./lib/newhop.global.js"></script>
   <script>
     const presenter = new newHOP.Presenter({ mount: 'viewer' });
+
+    new newHOP.Toolbar(presenter);
+
     presenter.setScene({
-      background: 0x1c2024,
-      entities: [
-        { id: 'model', type: 'model', file: 'models/laurana.ply' }
-      ]
+      world: {
+        background: 0x1c2024
+      },
+      navigation: {
+        type: 'turntable',
+        homeView: {
+          azimuth: -25,
+          elevation: 20,
+        }
+      },
+      objects: {
+        gargo: { file: 'models/gargo.nxz' }
+      }
     });
   </script>
 </body>

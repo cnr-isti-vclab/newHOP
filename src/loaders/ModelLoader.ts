@@ -19,6 +19,13 @@ export interface ModelLoadDefinition {
 
 const nexusCache = (NexusModule as unknown as { Cache: { cortopath: string } }).Cache;
 
+declare const __NEWHOP_LIBRARY_URL__: string | undefined;
+
+const libraryUrl = __NEWHOP_LIBRARY_URL__;
+const nexusWorkerDirectory = libraryUrl
+  ? new URL('.', libraryUrl).href.replace(/\/$/, '')
+  : new URL('/nexus3d', window.location.origin).href;
+
 export interface ModelLoaderConfig {
   renderer: THREE.WebGLRenderer;
   baseUrl?: string;
@@ -32,7 +39,7 @@ export class ModelLoader {
   constructor(config: ModelLoaderConfig) {
     this.renderer = config.renderer;
     this.baseUrl = config.baseUrl;
-    nexusCache.cortopath = new URL('/nexus3d', window.location.origin).href;
+    nexusCache.cortopath = nexusWorkerDirectory;
   }
 
   load(file: string, definition: ModelLoadDefinition = {}): Promise<THREE.Object3D> {

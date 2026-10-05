@@ -101,7 +101,7 @@ The default elevation range is `[-70, 70]`. Author-requested pole limits such as
 
 ## Scene Loading
 
-Model formats currently supported by `ModelLoader` are Nexus (`.nxz`, `.nxs`), GLB/GLTF, PLY, OBJ, and STL. Nexus loads asynchronously and uses the Corto worker served by Vite at `/nexus3d/corto.em.js`. Objects with `type: 'splat'` use Spark's `SplatMesh` loader for Gaussian-splat PLY files; one shared `SparkRenderer` is added lazily to the scene. Splats retain object transforms, visibility, tags, scene bounds, and runtime removal, but do not participate in mesh material or GLB animation controls.
+Model formats currently supported by `ModelLoader` are Nexus (`.nxz`, `.nxs`), GLB/GLTF, PLY, OBJ, and STL. Nexus loads asynchronously and uses the Corto worker. Built libraries discover the worker beside their own script or module URL; during source-based Vite development, the worker is served at `/nexus3d/corto.em.js`. Objects with `type: 'splat'` use Spark's `SplatMesh` loader for Gaussian-splat PLY files; one shared `SparkRenderer` is added lazily to the scene. Splats retain object transforms, visibility, tags, scene bounds, and runtime removal, but do not participate in mesh material or GLB animation controls.
 
 GLB/GLTF animation clips are retained by name. Each animated object owns its `THREE.AnimationMixer`; the Presenter updates active mixers from render-loop delta time and disposes them with the object. Runtime controls include clip discovery, play, pause, stop, and time-based scrubbing with `once`, `loop`, and `pingpong` modes.
 
@@ -127,6 +127,8 @@ The library builds as:
 
 - ESM: `dist/newhop.js`
 - global bundle: `dist/newhop.global.js`
+- Nexus worker beside the bundles: `dist/corto.em.js`
 - minimal publishable library: `minimal/lib/newhop.global.js`
+- minimal Nexus worker: `minimal/lib/corto.em.js`
 
 Examples remain plain HTML/JavaScript and import the TypeScript source during development.

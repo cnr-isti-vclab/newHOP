@@ -60,8 +60,9 @@ The build produces:
 
 - `dist/newhop.js` - ESM library build
 - `dist/newhop.global.js` - self-contained browser global build
-- `dist/nexus3d/corto.em.js` - Nexus3D worker resource
+- `dist/corto.em.js` - Nexus3D worker beside the built library
 - `minimal/lib/newhop.global.js` - refreshed minimal deployment bundle
+- `minimal/lib/corto.em.js` - refreshed Nexus3D worker beside the minimal bundle
 
 The ESM build externalizes Three.js for application bundlers. The global build bundles Three.js and Spark support, making it suitable for a simple browser deployment without CDN dependencies.
 
@@ -104,16 +105,18 @@ await presenter.setScene({
 
 ## Offline Deployment
 
-For a fully local kiosk deployment, serve the global bundle and all scene assets from the same local web server:
+For a fully local kiosk deployment, serve `minimal/` over HTTP. It can be deployed at the site root or under a subdirectory:
 
 ```text
-newhop.global.js
-nexus3d/corto.em.js       # required when Nexus models are used
-models/
-index.html
+minimal/
+  index.html
+  lib/
+    newhop.global.js
+    corto.em.js          # required when Nexus models are used
+  models/
 ```
 
-Gaussian splat scenes need the global bundle and their local `.ply` files. Nexus scenes additionally need the worker at `/nexus3d/corto.em.js`. No internet connection, CDN, npm installation, or Node.js runtime is required after the bundle has been built.
+Gaussian splat scenes need the global bundle and their local `.ply` files. newHOP locates the Nexus worker beside the loaded library, so the complete `minimal/` folder can be served from a subdirectory or renamed without path configuration. The build refreshes both generated files in `minimal/lib/`; keep `index.html` and model assets there. No internet connection, CDN, npm installation, or Node.js runtime is required after the bundle has been built.
 
 ## Documentation
 

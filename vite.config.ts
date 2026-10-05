@@ -3,6 +3,13 @@ import { createReadStream, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 export default defineConfig(({ mode }) => ({
+  define: {
+    __NEWHOP_LIBRARY_URL__: mode === 'global'
+      ? 'document.currentScript.src'
+      : mode === 'esm'
+        ? 'import.meta.url'
+        : 'undefined'
+  },
   resolve: {
     dedupe: ['three'],
     alias: [
@@ -26,7 +33,7 @@ export default defineConfig(({ mode }) => ({
         const workerPath = resolve(__dirname, 'node_modules/nexus3d/dist/corto.em.js');
         this.emitFile({
           type: 'asset',
-          fileName: 'nexus3d/corto.em.js',
+          fileName: 'corto.em.js',
           source: readFileSync(workerPath)
         });
       }
