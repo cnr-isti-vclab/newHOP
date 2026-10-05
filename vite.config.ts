@@ -4,7 +4,13 @@ import { resolve } from 'node:path';
 
 export default defineConfig(({ mode }) => ({
   resolve: {
-    dedupe: ['three']
+    dedupe: ['three'],
+    alias: [
+      {
+        find: /^three$/,
+        replacement: resolve(__dirname, 'node_modules/three/build/three.module.js')
+      }
+    ]
   },
   plugins: [
     {
@@ -42,6 +48,6 @@ export default defineConfig(({ mode }) => ({
         }
       }
     },
-    sourcemap: true
+    sourcemap: mode !== 'global'
   }
 }));
