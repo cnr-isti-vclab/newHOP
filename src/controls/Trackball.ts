@@ -103,6 +103,9 @@ export class Trackball {
   private pointerId = -1;
   private lastX = 0;
   private lastY = 0;
+  private readonly touchPoints = new Map<number, { x: number; y: number }>();
+  private touchCentroid = { x: 0, y: 0 };
+  private touchDistance = 0;
   private minAzimuth = -Infinity;
   private maxAzimuth = Infinity;
   private minElevation = DEFAULT_ELEVATION_LIMITS[0];
@@ -461,6 +464,21 @@ export class Trackball {
   private readonly onPointerDown = (event: PointerEvent): void => {
     if (!this.navigationEnabled) return;
     this.animation = undefined;
+    if (event.pointerType === 'touch') {
+      this.touchPoints.set(event.pointerId, { x: event.clientX, y: event.clientY });
+      if (this.touchPoints.size === 1) {
+        this.dragging = true;
+        this.pointerId = event.pointerId;
+        this.lastX = event.clientX;
+        this.lastY = event.clientY;
+      } else if (this.touchPoints.size === 2) {
+        this.dragging = true;
+        this.pointerId = -1;
+        this.updateTouchGestureState();
+      }
+      this.element.setPointerCapture(event.pointerId);
+      return;
+    }
     this.dragging = true;
     this.panning = event.button === 1 || event.button === 2 || event.shiftKey;
     this.rightButtonActive = event.button === 2;
@@ -472,7 +490,25 @@ export class Trackball {
   };
 
   private readonly onPointerMove = (event: PointerEvent): void => {
-    if (!this.navigationEnabled || !this.dragging || event.pointerId !== this.pointerId) return;
+    if (!this.navigationEnabled || !this.dragging) return;
+    if (event.pointerType !== 'touch' && event.pointerId !== this.pointerId) return;
+    if (event.pointerType === 'touch') {
+      if (!this.touchPoints.has(event.pointerId)) return;
+      if (this.touchPoints.size >= 2) {
+        const previousCentroid = this.touchCentroid;
+        const previousDistance = this.touchDistance;
+        this.touchPoints.set(event.pointerId, { x: event.clientX, y: event.clientY });
+        this.updateTouchGestureState();
+        this.pan(this.touchCentroid.x - previousCentroid.x, this.touchCentroid.y - previousCentroid.y);
+        if (previousDistance > Number.EPSILON && this.touchDistance > Number.EPSILON) {
+          this.dolly(previousDistance / this.touchDistance);
+        }
+        return;
+      }
+    }
+    if (event.pointerType === 'touch') {
+      this.touchPoints.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    }
     const dx = event.clientX - this.lastX;
     const dy = event.clientY - this.lastY;
     this.lastX = event.clientX;
@@ -485,6 +521,22 @@ export class Trackball {
   };
 
   private readonly onPointerUp = (event: PointerEvent): void => {
+    if (event.pointerType === 'touch') {
+      this.touchPoints.delete(event.pointerId);
+      if (this.touchPoints.size === 0) {
+        this.dragging = false;
+        this.pointerId = -1;
+      } else if (this.touchPoints.size === 1) {
+        const [remainingId, remainingPoint] = this.touchPoints.entries().next().value as [number, { x: number; y: number }];
+        this.pointerId = remainingId;
+        this.lastX = remainingPoint.x;
+        this.lastY = remainingPoint.y;
+        this.updateTouchGestureState();
+      } else {
+        this.updateTouchGestureState();
+      }
+      return;
+    }
     if (event.pointerId !== this.pointerId) return;
     this.dragging = false;
     this.rightButtonActive = false;
@@ -502,6 +554,21 @@ export class Trackball {
     event.preventDefault();
     this.rightButtonDragged = false;
   };
+
+  private updateTouchGestureState(): void {
+    const points = [...this.touchPoints.values()];
+    if (points.length < 2) {
+      this.touchCentroid = points.length === 1 ? { ...points[0] } : { x: 0, y: 0 };
+      this.touchDistance = 0;
+      return;
+    }
+    const [first, second] = points;
+    this.touchCentroid = {
+      x: (first.x + second.x) / 2,
+      y: (first.y + second.y) / 2
+    };
+    this.touchDistance = Math.hypot(second.x - first.x, second.y - first.y);
+  }
 
   private rotate(dx: number, dy: number): void {
     this.azimuth -= dx * this.rotateSpeed;

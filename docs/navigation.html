@@ -84,6 +84,21 @@ presenter.trackball.setVerticalAxisLocked(true);
     <p>The up-axis changes camera navigation and base-grid orientation only. Mesh coordinates, object transforms, picked points, and measurement results remain in their authored XYZ coordinate system. Pan limits remain literal world-axis <code>x</code>, <code>y</code>, and <code>z</code> ranges.</p>
 
 <!------------------------------------------------------------------------------------------------------------->
+    <h2>Touch Interaction</h2>
+    <p>Turntable navigation supports touch devices without changing the mouse and keyboard interaction model.</p>
+    <table>
+      <thead><tr><th>Gesture</th><th>Action</th></tr></thead>
+      <tbody>
+        <tr><td>Single tap</td><td>Remains available for picking and hotspot activation when those features are enabled.</td></tr>
+        <tr><td>One-finger drag</td><td>Orbit around the turntable.</td></tr>
+        <tr><td>Two-finger drag</td><td>Pan using the movement of the two-finger centroid.</td></tr>
+        <tr><td>Pinch</td><td>Zoom. In orthographic mode this changes the frustum scale; in perspective mode it changes navigation distance.</td></tr>
+        <tr><td>Two-finger twist</td><td>Ignored in turntable mode. Twist is reserved for a future sphere-trackball interaction.</td></tr>
+      </tbody>
+    </table>
+    <p>Touch navigation uses the same public Trackball navigation state and respects the configured limits. Applications combining touch navigation with picking or hotspot activation should use a small movement threshold to distinguish a tap from a drag. Double-tap behavior is not currently part of the Trackball touch contract.</p>
+
+<!------------------------------------------------------------------------------------------------------------->
     <h2>Home View</h2>
     <p>Specifies the view restored by the initial scene setup and by Trackball reset operations, including target, azimuth, elevation, and distance.</p>
     <pre><code>
