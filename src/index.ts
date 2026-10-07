@@ -1,3 +1,4 @@
+export * as THREE from 'three';
 export { VERSION } from './version';
 export { Presenter } from './core/Presenter';
 export type { PresenterConfig, SceneReadyListener, SpotClickEvent, SpotClickListener } from './core/Presenter';
