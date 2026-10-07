@@ -116,7 +116,7 @@ export class EntityManager {
     }));
   }
 
-  playAnimation(id: string, name: string, options: ObjectAnimationOptions = {}): void {
+  playAnimation(id: string, name: string | undefined, options: ObjectAnimationOptions = {}): void {
     const state = this.requireAnimationState(id);
     const clip = findClip(state.clips, name);
     state.mixer.stopAllAction();
@@ -623,7 +623,8 @@ function getClipName(clip: THREE.AnimationClip, index: number): string {
   return clip.name || `Animation ${index + 1}`;
 }
 
-function findClip(clips: THREE.AnimationClip[], name: string): THREE.AnimationClip {
+function findClip(clips: THREE.AnimationClip[], name: string | undefined): THREE.AnimationClip {
+  if (name === undefined) return clips[0];
   const index = clips.findIndex((clip, clipIndex) => getClipName(clip, clipIndex) === name);
   if (index < 0) throw new Error(`Animation "${name}" was not found.`);
   return clips[index];

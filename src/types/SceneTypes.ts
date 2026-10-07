@@ -92,7 +92,8 @@ export interface EntityTransformSnapshot {
 export type AnimationLoopMode = 'once' | 'loop' | 'pingpong';
 
 export interface ObjectAnimationDefinition {
-  clip: string;
+  /** Clip name to play; omitted to play the first clip in the file. */
+  clip?: string;
   autoplay?: boolean;
   mode?: AnimationLoopMode;
   repetitions?: number;

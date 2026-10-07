@@ -191,7 +191,7 @@ export class Presenter {
     return this.objectManager.getAnimations(id);
   }
 
-  playObjectAnimation(id: string, name: string, options: ObjectAnimationOptions = {}): void {
+  playObjectAnimation(id: string, name: string | undefined, options: ObjectAnimationOptions = {}): void {
     this.objectManager.playAnimation(id, name, options);
   }
 
