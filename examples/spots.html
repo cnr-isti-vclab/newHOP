@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>newHOP spots example</title>
+  <style>
+    html, body, #viewer { width: 100%; height: 100%; margin: 0; }
+    body { overflow: hidden; background: #101316; color: #e5e7eb; font-family: sans-serif; }
+    #viewer { position: relative; }
+    .hud {
+      position: absolute;
+      left: 16px;
+      top: 16px;
+      z-index: 20;
+      width: min(290px, calc(100vw - 32px));
+      padding: 12px 14px;
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      border-radius: 8px;
+      background: rgba(17, 24, 39, 0.86);
+      backdrop-filter: blur(4px);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+    .hud strong { display: block; margin-bottom: 4px; }
+    .spot-list { display: grid; gap: 6px; margin-top: 12px; }
+    .spot-row { display: flex; align-items: center; gap: 8px; }
+    .spot-row label { flex: 1; }
+    .spot-row button,
+    .actions button {
+      min-height: 30px;
+      border: 1px solid rgba(148, 163, 184, 0.45);
+      border-radius: 5px;
+      padding: 5px 8px;
+      background: rgba(30, 41, 59, 0.9);
+      color: inherit;
+      cursor: pointer;
+      font: inherit;
+    }
+    .spot-row button:hover,
+    .actions button:hover { border-color: #93c5fd; }
+    .actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin-top: 10px; }
+    .status { margin-top: 10px; color: #93c5fd; min-height: 2.8em; }
+  </style>
+</head>
+<body>
+  <div id="viewer">
+    <div class="hud">
+      <strong>Spot interaction</strong>
+      <div>Toggle visibility, move the pointer over a spot to highlight it, or click a spot for its world-space intersection.</div>
+      <div class="spot-list">
+        <div class="spot-row"><input id="spot-a-visible" type="checkbox" checked><label for="spot-a-visible">Feature A</label><button id="spot-a-highlight" type="button">Highlight</button></div>
+        <div class="spot-row"><input id="spot-b-visible" type="checkbox" checked><label for="spot-b-visible">Feature B</label><button id="spot-b-highlight" type="button">Highlight</button></div>
+        <div class="spot-row"><input id="spot-c-visible" type="checkbox" checked><label for="spot-c-visible">Feature C</label><button id="spot-c-highlight" type="button">Highlight</button></div>
+      </div>
+      <div class="actions">
+        <button id="show-all" type="button">Show all</button>
+        <button id="hide-all" type="button">Hide all</button>
+      </div>
+      <div class="status" id="status">Loading scene...</div>
+    </div>
+  </div>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { Presenter, Toolbar } from '../src/index.ts';
+
+    const presenter = new Presenter({ mount: 'viewer' });
+    new Toolbar(presenter, { position: 'bottom-center' });
+
+    const status = document.getElementById('status');
+    const spotIds = ['spotA', 'spotB', 'spotC'];
+    const spotLabels = { spotA: 'Feature A', spotB: 'Feature B', spotC: 'Feature C' };
+
+    const showStatus = (message) => {
+      status.textContent = message;
+    };
+
+    const setSpotVisibility = (id, visible) => {
+      presenter.setSpotAppearance(id, { visible });
+      showStatus(`${spotLabels[id]}: ${visible ? 'visible' : 'hidden'}`);
+    };
+
+    const toggleSpotHighlight = (id, button) => {
+      const highlighted = presenter.getSpotAppearance(id).highlighted;
+      presenter.setSpotHighlighted(id, !highlighted);
+      button.textContent = highlighted ? 'Highlight' : 'Clear highlight';
+      showStatus(`${spotLabels[id]}: ${highlighted ? 'highlight cleared' : 'highlighted'}`);
+    };
+
+    for (const id of spotIds) {
+      const suffix = id.slice(-1).toLowerCase();
+      const visibility = document.getElementById(`spot-${suffix}-visible`);
+      const highlight = document.getElementById(`spot-${suffix}-highlight`);
+      visibility.addEventListener('change', () => setSpotVisibility(id, visibility.checked));
+      highlight.addEventListener('click', () => toggleSpotHighlight(id, highlight));
+    }
+
+    document.getElementById('show-all').addEventListener('click', () => {
+      for (const id of spotIds) presenter.setSpotAppearance(id, { visible: true });
+      for (const id of spotIds) document.getElementById(`spot-${id.slice(-1).toLowerCase()}-visible`).checked = true;
+      showStatus('All spots visible');
+    });
+
+    document.getElementById('hide-all').addEventListener('click', () => {
+      for (const id of spotIds) presenter.setSpotAppearance(id, { visible: false });
+      for (const id of spotIds) document.getElementById(`spot-${id.slice(-1).toLowerCase()}-visible`).checked = false;
+      showStatus('All spots hidden');
+    });
+
+    presenter.onSpotClicked = (id, event) => {
+      showStatus(`${spotLabels[id]} clicked at ${event.point.toArray().map((value) => value.toFixed(1)).join(', ')}`);
+    };
+
+    let hoveredSpotId;
+    presenter.renderer.domElement.addEventListener('pointermove', (event) => {
+      const result = presenter.picking.pickFromPointer(event.clientX, event.clientY);
+      let entityObject = result?.object;
+      while (entityObject && !entityObject.userData.entity) entityObject = entityObject.parent;
+      const nextSpotId = entityObject?.userData.entity?.type === 'hotspot'
+        ? entityObject.userData.entity.id
+        : undefined;
+      if (nextSpotId === hoveredSpotId) return;
+      if (hoveredSpotId) presenter.setSpotHighlighted(hoveredSpotId, false);
+      if (nextSpotId) presenter.setSpotHighlighted(nextSpotId, true);
+      hoveredSpotId = nextSpotId;
+      if (nextSpotId) showStatus(`Hovering ${spotLabels[nextSpotId]}`);
+    });
+
+    presenter.on('spotclick', (event) => {
+      console.log('Spot event:', event.id, event.point.toArray());
+    });
+
+    presenter.setScene({
+      world: {
+        background: 0x172033,
+        camera: { fov: 42 }
+      },
+      lighting: {
+        lights: {
+          fill: {
+            type: 'hemisphere',
+            enabled: true,
+            color: 0xb9d7ff,
+            groundColor: 0x253047,
+            intensity: 1.8
+          },
+          key: {
+            type: 'directional',
+            enabled: true,
+            color: 0xfff1d6,
+            intensity: 2.2,
+            position: [300, 500, 600],
+            target: [0, 0, 0]
+          }
+        }
+      },
+      navigation: {
+        type: 'turntable',
+        upAxis: 'y',
+        limits: {
+          azimuth: 'free',
+          elevation: [-80, 80],
+          distance: [2, 40],
+          pan: {
+            x: [-15, 15],
+            y: [-15, 15],
+            z: [-15, 15]
+          }
+        },
+        homeView: {
+          target: [0, 0, 0],
+          azimuth: -35,
+          elevation: 20,
+          distance: 18
+        }
+      },
+      helpers: {
+        origin: { type: 'axes', size: 4, color: 0xfbbf24 },
+        ground: { type: 'grid', size: 20, spacing: 1, color: 0x64748b, opacity: 0.45 }
+      },
+      objects: {
+        pedestal: {
+          geometry: new THREE.CylinderGeometry(5, 5, 1, 48),
+          material: new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.72 }),
+          position: [0, -0.5, 0]
+        }
+      },
+      spots: {
+        spotA: {
+          primitive: 'sphere',
+          label: 'Feature A',
+          size: 1.2,
+          position: [-3, 1.2, 0],
+          color: 0xfb7185,
+          highlightColor: 0xffffff,
+          highlightAlpha: 0.7,
+          alpha: 0.5,
+          tags: ['features']
+        },
+        spotB: {
+          primitive: 'cube',
+          label: 'Feature B',
+          size: 1.2,
+          position: [0, 1.2, 0],
+          color: 0x4ade80,
+          highlightColor: 0xffffff,
+          highlightAlpha: 0.7,
+          alpha: 0.5,
+          tags: ['features']
+        },
+        spotC: {
+          primitive: 'sphere',
+          label: 'Feature C',
+          size: 1.2,
+          position: [3, 1.2, 0],
+          color: 0x60a5fa,
+          highlightColor: 0xffffff,
+          highlightAlpha: 0.7,
+          alpha: 0.5,
+          tags: ['features']
+        }
+      }
+    }).then(() => showStatus('Scene ready: hover or click a spot'));
+  </script>
+</body>
+</html>
