@@ -132,9 +132,17 @@ presenter.playObjectAnimation('animated', clips[0].name, {
 });
 presenter.pauseObjectAnimation('animated');
 presenter.resumeObjectAnimation('animated');
+console.log(presenter.getObjectAnimationTime('animated'));
 presenter.setObjectAnimationTime('animated', clips[0].name, 1.25);
 presenter.stopObjectAnimation('animated');</code></pre>
     <p><code>pauseObjectAnimation()</code> preserves the current time, and <code>resumeObjectAnimation()</code> continues that action without resetting it. Animation mixers are updated by the Presenter render loop and are cleaned up when the object is removed. See the <a href="../examples/animation.html">animation example</a> for an interactive clip selector and time scrubber.</p>
+    <p>Subscribe to frame-accurate playback state with <code>onObjectAnimationUpdate()</code>. The returned function removes the listener.</p>
+    <pre><code>const unsubscribe = presenter.onObjectAnimationUpdate('animated', (state) => {
+  slider.value = String(state.time);
+  playButton.textContent = state.playing ? 'Pause' : 'Play';
+});
+
+unsubscribe();</code></pre>
 
     <h3>Transformation</h3>
     <p>Scene rotations are authored in degrees and ordered as <code>[x, y, z]</code>. For example, <code>rotation: [0, 90, 0]</code> turns an object 90 degrees around the Y axis.</p>

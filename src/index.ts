@@ -48,6 +48,7 @@ export type {
   MaterialProperties,
   ObjectAnimationDefinition,
   ObjectAnimationOptions,
+  ObjectAnimationState,
   SpotVisuals,
   SpotAppearance,
   ObjectAppearance,

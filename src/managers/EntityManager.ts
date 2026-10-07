@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import type { AnimationClipInfo, AnimationLoopMode, EntityDefinition, EntityTransform, EntityTransformSnapshot, MaterialProperties, Matrix4Tuple, ObjectAnimationOptions, ObjectAppearance, SpotAppearance, Vector3Tuple } from '../types/SceneTypes';
+import type { AnimationClipInfo, AnimationLoopMode, EntityDefinition, EntityTransform, EntityTransformSnapshot, MaterialProperties, Matrix4Tuple, ObjectAnimationOptions, ObjectAnimationState, ObjectAppearance, SpotAppearance, Vector3Tuple } from '../types/SceneTypes';
 import { ModelLoader, type ModelLoadDefinition } from '../loaders/ModelLoader';
 
 interface MaterialState {
@@ -16,7 +16,10 @@ interface AnimationState {
   clips: THREE.AnimationClip[];
   action?: THREE.AnimationAction;
   clip?: THREE.AnimationClip;
+  mode: AnimationLoopMode;
 }
+
+export type ObjectAnimationListener = (state: ObjectAnimationState) => void;
 
 type MaterialEntityDefinition = EntityDefinition & { material?: THREE.Material | MaterialProperties };
 
@@ -26,6 +29,7 @@ export class EntityManager {
   private readonly definitions = new Map<string, EntityDefinition>();
   private readonly materialStates = new Map<string, MaterialState[]>();
   private readonly animationStates = new Map<string, AnimationState>();
+  private readonly animationListeners = new Map<string, Set<ObjectAnimationListener>>();
 
   constructor(root: THREE.Group, private readonly modelLoader: ModelLoader) {
     this.root = root;
@@ -90,6 +94,7 @@ export class EntityManager {
     this.definitions.delete(id);
     this.materialStates.delete(id);
     this.animationStates.delete(id);
+    this.animationListeners.delete(id);
     return true;
   }
 
@@ -116,6 +121,33 @@ export class EntityManager {
     }));
   }
 
+  getAnimationTime(id: string): number {
+    const state = this.requireAnimationState(id);
+    return getActionTime(state);
+  }
+
+  onAnimationUpdate(id: string, listener: ObjectAnimationListener): () => void {
+    const listeners = this.animationListeners.get(id) ?? new Set<ObjectAnimationListener>();
+    listeners.add(listener);
+    this.animationListeners.set(id, listeners);
+    listener(this.getAnimationState(id));
+    return () => {
+      listeners.delete(listener);
+      if (listeners.size === 0) this.animationListeners.delete(id);
+    };
+  }
+
+  private getAnimationState(id: string): ObjectAnimationState {
+    const state = this.requireAnimationState(id);
+    return {
+      clip: state.clip ? getClipName(state.clip, state.clips.indexOf(state.clip)) : undefined,
+      time: getActionTime(state),
+      duration: state.clip?.duration ?? 0,
+      playing: Boolean(state.action && state.action.isRunning() && !state.action.paused),
+      mode: state.mode
+    };
+  }
+
   playAnimation(id: string, name: string | undefined, options: ObjectAnimationOptions = {}): void {
     const state = this.requireAnimationState(id);
     const clip = findClip(state.clips, name);
@@ -131,11 +163,14 @@ export class EntityManager {
     action.play();
     state.action = action;
     state.clip = clip;
+    state.mode = mode;
+    this.notifyAnimationListeners(id);
   }
 
   pauseAnimation(id: string): void {
     const state = this.requireAnimationState(id);
     if (state.action) state.action.paused = true;
+    this.notifyAnimationListeners(id);
   }
 
   resumeAnimation(id: string): void {
@@ -144,6 +179,7 @@ export class EntityManager {
       state.action.paused = false;
       state.action.play();
     }
+    this.notifyAnimationListeners(id);
   }
 
   stopAnimation(id: string): void {
@@ -151,6 +187,7 @@ export class EntityManager {
     state.mixer.stopAllAction();
     state.action = undefined;
     state.clip = undefined;
+    this.notifyAnimationListeners(id);
   }
 
   setAnimationTime(id: string, name: string, time: number): void {
@@ -162,12 +199,21 @@ export class EntityManager {
       state.clip = clip;
     }
     state.action!.paused = true;
-    state.action!.time = THREE.MathUtils.clamp(time, 0, clip.duration);
+    const clampedTime = THREE.MathUtils.clamp(time, 0, clip.duration);
+    state.action!.time = isPingPongReverse(state) ? clip.duration - clampedTime : clampedTime;
     state.mixer.update(0);
+    this.notifyAnimationListeners(id);
   }
 
   updateAnimations(deltaSeconds: number): void {
-    for (const state of this.animationStates.values()) state.mixer.update(deltaSeconds);
+    for (const [id, state] of this.animationStates) {
+      state.mixer.update(deltaSeconds);
+      this.notifyAnimationListeners(id);
+    }
+  }
+
+  private notifyAnimationListeners(id: string): void {
+    for (const listener of this.animationListeners.get(id) ?? []) listener(this.getAnimationState(id));
   }
 
   getTransform(id: string): EntityTransformSnapshot {
@@ -624,7 +670,20 @@ function disposeObject(object: THREE.Object3D): void {
 function createAnimationState(object: THREE.Object3D): AnimationState | undefined {
   const clips = object.userData.newHOPAnimations as THREE.AnimationClip[] | undefined;
   if (!clips?.length) return undefined;
-  return { mixer: new THREE.AnimationMixer(object), clips };
+  return { mixer: new THREE.AnimationMixer(object), clips, mode: 'loop' };
+}
+
+function isPingPongReverse(state: AnimationState): boolean {
+  const action = state.action as (THREE.AnimationAction & { _loopCount?: number }) | undefined;
+  const loopCount = action?._loopCount ?? -1;
+  return action?.loop === THREE.LoopPingPong && loopCount >= 1 && (loopCount & 1) === 1;
+}
+
+function getActionTime(state: AnimationState): number {
+  if (!state.action) return 0;
+  return isPingPongReverse(state)
+    ? state.clip!.duration - state.action.time
+    : state.action.time;
 }
 
 function getClipName(clip: THREE.AnimationClip, index: number): string {

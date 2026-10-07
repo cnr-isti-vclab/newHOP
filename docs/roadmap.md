@@ -11,7 +11,7 @@ This is a working plan, not a promise of release dates. Keep entries small enoug
 - Scene loading updates bounds and extent helpers incrementally, with a final `onSceneReady()` signal after all entities are ready.
 - World content transforms align authored entities without rotating the navigation/reference frame.
 - Model loading supports Nexus, GLB/GLTF, PLY, OBJ, and STL.
-- GLB/GLTF clips are retained by name, with per-object playback, pause/stop, declaration-time autoplay, and time-based scrubbing.
+- GLB/GLTF clips are retained by name, with per-object playback, pause/resume/stop, declaration-time autoplay, time-based scrubbing, and frame-accurate playback-state listeners.
 - Static HTML documentation covers navigation, objects, and spots.
 
 ## Next Priorities
@@ -34,6 +34,7 @@ This is a working plan, not a promise of release dates. Keep entries small enoug
 
 - Add focused tests for clip discovery, clip selection, duration clamping, mixer lifecycle, declaration-time autoplay, and repeated or skinned model instances.
 - Decide whether frame-based seeking is needed in addition to the implemented seconds-based seeking; glTF clips do not reliably carry a source frame rate.
+- Add focused tests for pingpong effective-time mapping, resume behavior, listener lifecycle, and listener updates during scrubbing.
 
 ### Tools and UI
 

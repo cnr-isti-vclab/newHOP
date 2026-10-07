@@ -84,6 +84,7 @@
     const timeInput = document.getElementById('time');
     const timeValue = document.getElementById('time-value');
     const status = document.getElementById('status');
+    let scrubbing = false;
 
     await presenter.setScene({
       world: {
@@ -125,6 +126,12 @@
       return clips.find((clip) => clip.name === clipSelect.value) ?? clips[0];
     }
 
+    presenter.onObjectAnimationUpdate('animated', (state) => {
+      if (scrubbing || state.clip !== selectedClip()?.name) return;
+      timeInput.value = String(state.time);
+      timeValue.value = `${state.time.toFixed(2)}s`;
+    });
+
     document.getElementById('play').addEventListener('click', () => {
       if (!selectedClip()) return;
       presenter.playObjectAnimation('animated', selectedClip().name, { mode: modeSelect.value });
@@ -152,6 +159,14 @@
       presenter.setObjectAnimationTime('animated', clip.name, 0);
     });
 
+    timeInput.addEventListener('pointerdown', () => {
+      scrubbing = true;
+    });
+    const finishScrubbing = () => {
+      scrubbing = false;
+    };
+    timeInput.addEventListener('pointerup', finishScrubbing);
+    timeInput.addEventListener('pointercancel', finishScrubbing);
     timeInput.addEventListener('input', () => {
       const clip = selectedClip();
       if (!clip) return;

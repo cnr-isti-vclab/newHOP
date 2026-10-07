@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { SparkRenderer } from '@sparkjsdev/spark';
-import type { AnimationClipInfo, CameraProjection, CameraType, EntityDefinition, EntityTransform, EntityTransformSnapshot, GeometryEntity, HelperDefinition, HotspotEntity, HotspotPrimitive, MaterialProperties, ModelEntity, ObjectAnimationOptions, ObjectAppearance, SceneDescription, SceneObjectDefinition, SceneTransform, SceneTransformSnapshot, SplatEntity, SpotAppearance, SpotDefinition, WorldBackground } from '../types/SceneTypes';
+import type { AnimationClipInfo, CameraProjection, CameraType, EntityDefinition, EntityTransform, EntityTransformSnapshot, GeometryEntity, HelperDefinition, HotspotEntity, HotspotPrimitive, MaterialProperties, ModelEntity, ObjectAnimationOptions, ObjectAnimationState, ObjectAppearance, SceneDescription, SceneObjectDefinition, SceneTransform, SceneTransformSnapshot, SplatEntity, SpotAppearance, SpotDefinition, WorldBackground } from '../types/SceneTypes';
 import { EntityManager } from '../managers/EntityManager';
 import { ModelLoader } from '../loaders/ModelLoader';
 import { Trackball, type TrackballChangeListener, type TrackballStatus, type ViewDirection, type Viewpoint } from '../controls/Trackball';
@@ -189,6 +189,14 @@ export class Presenter {
 
   getObjectAnimations(id: string): AnimationClipInfo[] {
     return this.objectManager.getAnimations(id);
+  }
+
+  getObjectAnimationTime(id: string): number {
+    return this.objectManager.getAnimationTime(id);
+  }
+
+  onObjectAnimationUpdate(id: string, listener: (state: ObjectAnimationState) => void): () => void {
+    return this.objectManager.onAnimationUpdate(id, listener);
   }
 
   playObjectAnimation(id: string, name: string | undefined, options: ObjectAnimationOptions = {}): void {

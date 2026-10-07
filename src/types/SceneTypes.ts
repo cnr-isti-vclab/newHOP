@@ -111,6 +111,14 @@ export interface AnimationClipInfo {
   duration: number;
 }
 
+export interface ObjectAnimationState {
+  clip?: string;
+  time: number;
+  duration: number;
+  playing: boolean;
+  mode: AnimationLoopMode;
+}
+
 export type SceneTransform = EntityTransform;
 export type SceneTransformSnapshot = EntityTransformSnapshot;
 
