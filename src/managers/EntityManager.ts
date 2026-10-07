@@ -138,6 +138,14 @@ export class EntityManager {
     if (state.action) state.action.paused = true;
   }
 
+  resumeAnimation(id: string): void {
+    const state = this.requireAnimationState(id);
+    if (state.action) {
+      state.action.paused = false;
+      state.action.play();
+    }
+  }
+
   stopAnimation(id: string): void {
     const state = this.requireAnimationState(id);
     state.mixer.stopAllAction();

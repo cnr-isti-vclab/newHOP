@@ -199,6 +199,10 @@ export class Presenter {
     this.objectManager.pauseAnimation(id);
   }
 
+  resumeObjectAnimation(id: string): void {
+    this.objectManager.resumeAnimation(id);
+  }
+
   stopObjectAnimation(id: string): void {
     this.objectManager.stopAnimation(id);
   }
