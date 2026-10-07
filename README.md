@@ -47,6 +47,33 @@ Useful examples include:
 - `examples/turntable.html` - runtime navigation controls
 - `examples/lighting.html` - scene lights and flashlight controls
 
+### GLB animation clips
+
+GLB/GLTF animations can be discovered and controlled through the `Presenter` API. The
+`clip` property is optional when enabling autoplay; omitting it plays the first clip
+found in the file. Clips without names are exposed as `Animation 1`, `Animation 2`,
+and so on.
+
+```ts
+await presenter.setScene({
+  objects: {
+    animated: {
+      file: 'models/opening.glb',
+      animation: {
+        autoplay: true,
+        mode: 'loop'
+      }
+    }
+  }
+});
+
+const clips = presenter.getObjectAnimations('animated');
+presenter.playObjectAnimation('animated', clips[0].name);
+```
+
+To select a particular clip, pass its name from `getObjectAnimations()` as the
+second argument to `playObjectAnimation()`.
+
 ## Building
 
 Run the complete validation and build pipeline:

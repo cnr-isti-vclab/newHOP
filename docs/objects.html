@@ -99,6 +99,41 @@ presenter.removeObject('newMarker');</code></pre>
 }</code></pre>
     <p>See the <a href="../examples/splats.html">Gaussian splat example</a> for a complete scene.</p>
 
+    <h3>Animation</h3>
+    <p>GLB and GLTF files can include animation clips. Add an <code>animation</code> block to a model object to start playback automatically. The <code>clip</code> property is optional; when it is omitted, the first clip in the file is played. This is useful for files whose clip names are unknown or empty.</p>
+    <pre><code>objects: {
+  animated: {
+    file: 'models/opening.glb',
+    animation: {
+      autoplay: true,
+      mode: 'loop',
+      repetitions: 3,
+      timeScale: 1
+    }
+  }
+}</code></pre>
+    <table>
+      <thead><tr><th>Property</th><th>Meaning</th><th>Default</th></tr></thead>
+      <tbody>
+        <tr><td><code>clip</code></td><td>Animation clip name. Omit it to play the first clip.</td><td>First clip</td></tr>
+        <tr><td><code>autoplay</code></td><td>Start the selected clip after the model loads.</td><td><code>false</code></td></tr>
+        <tr><td><code>mode</code></td><td>Playback mode: <code>'once'</code>, <code>'loop'</code>, or <code>'pingpong'</code>.</td><td><code>'loop'</code></td></tr>
+        <tr><td><code>repetitions</code></td><td>Number of repetitions. For <code>'once'</code>, the default is one; for other modes, playback repeats indefinitely.</td><td>Mode-dependent</td></tr>
+        <tr><td><code>timeScale</code></td><td>Playback speed multiplier. Negative values play backward.</td><td><code>1</code></td></tr>
+      </tbody>
+    </table>
+    <p>Use <code>getObjectAnimations()</code> to discover clips and their durations. Clips without a source name are exposed as <code>Animation 1</code>, <code>Animation 2</code>, and so on. Use the returned name with <code>playObjectAnimation()</code> or <code>setObjectAnimationTime()</code>.</p>
+    <pre><code>const clips = presenter.getObjectAnimations('animated');
+console.log(clips); // [{ name: 'Animation 1', duration: 2.5 }]
+
+presenter.playObjectAnimation('animated', clips[0].name, {
+  mode: 'pingpong'
+});
+presenter.pauseObjectAnimation('animated');
+presenter.setObjectAnimationTime('animated', clips[0].name, 1.25);
+presenter.stopObjectAnimation('animated');</code></pre>
+    <p>Animation mixers are updated by the Presenter render loop and are cleaned up when the object is removed. See the <a href="../examples/animation.html">animation example</a> for an interactive clip selector and time scrubber.</p>
+
     <h3>Transformation</h3>
     <p>Scene rotations are authored in degrees and ordered as <code>[x, y, z]</code>. For example, <code>rotation: [0, 90, 0]</code> turns an object 90 degrees around the Y axis.</p>
     <pre><code>objects: {
