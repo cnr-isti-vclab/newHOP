@@ -46,6 +46,7 @@ This is a working plan, not a promise of release dates. Keep entries small enoug
 
 - Add automated browser checks for minimal and advanced examples.
 - Add unit tests for pure navigation math and limit normalization.
+- Carefully review scene disposal for both in-place scene reset and permanent Presenter/viewer removal, including animation mixers, event listeners, renderer resources, and overlapping asynchronous scene loads.
 - Add a pull-request checklist and CI workflow after the shared GitHub repository is created.
 - Keep generated bundles out of hand-edited workflows and document release generation.
 

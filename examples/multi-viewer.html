@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>newHOP multi-viewer example</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --page: #0b1120;
+      --band: #111827;
+      --text: #e5e7eb;
+      --muted: #aab4c3;
+      --line: rgba(148, 163, 184, 0.22);
+      --accent: #7dd3fc;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      background: linear-gradient(160deg, #0b1120 0%, #172033 100%);
+      color: var(--text);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.6;
+    }
+    main { display: grid; gap: 1px; background: var(--line); }
+    .band, .copy, .viewer-panel {
+      background: var(--band);
+    }
+    .band {
+      min-height: 22vh;
+      display: grid;
+      align-content: center;
+      padding: 42px clamp(20px, 7vw, 110px);
+    }
+    .band h1, .copy h2, .copy p { max-width: 680px; }
+    h1, h2 { margin: 0; letter-spacing: 0.01em; }
+    h1 { font-size: clamp(2rem, 5vw, 4rem); line-height: 1.05; }
+    h2 { color: var(--accent); font-size: clamp(1.35rem, 2.5vw, 2rem); }
+    p { color: var(--muted); margin: 12px 0 0; }
+    .split {
+      min-height: 52vh;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(280px, 0.78fr);
+      gap: 1px;
+      background: var(--line);
+    }
+    .split.reverse { grid-template-columns: minmax(280px, 0.78fr) minmax(0, 1fr); }
+    .copy {
+      display: grid;
+      align-content: center;
+      padding: 42px clamp(20px, 6vw, 90px);
+    }
+    .copy small { color: #fbbf24; text-transform: uppercase; letter-spacing: 0.12em; }
+    .viewer-panel { min-height: 420px; position: relative; }
+    .viewer {
+      width: 100%;
+      height: 100%;
+      min-height: 420px;
+      position: relative;
+      overflow: hidden;
+    }
+    .viewer-label {
+      position: absolute;
+      left: 14px;
+      top: 14px;
+      z-index: 2;
+      padding: 5px 8px;
+      border: 1px solid rgba(226, 232, 240, 0.24);
+      border-radius: 5px;
+      background: rgba(15, 23, 42, 0.72);
+      color: #e2e8f0;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      pointer-events: none;
+    }
+    @media (max-width: 760px) {
+      .split, .split.reverse { grid-template-columns: 1fr; }
+      .viewer-panel { min-height: 56vh; }
+      .viewer { min-height: 56vh; }
+      .copy { min-height: 30vh; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header class="band">
+      <h1>Two viewers, one page</h1>
+      <p>A minimal embedded-viewer layout. Each Presenter owns its own scene, camera, navigation, renderer, and toolbar.</p>
+    </header>
+
+    <section class="split">
+      <div class="viewer-panel">
+        <div class="viewer-label">Viewer 1 · perspective</div>
+        <div class="viewer" id="viewer-one"></div>
+      </div>
+      <article class="copy">
+        <small>Viewer one</small>
+        <h2>Laurana in perspective</h2>
+        <p>This viewer uses the default perspective camera, a warm background, and a restrained lighting setup. Its toolbar controls only this canvas.</p>
+      </article>
+    </section>
+
+    <section class="split reverse">
+      <article class="copy">
+        <small>Viewer two</small>
+        <h2>Gargoyle in orthographic</h2>
+        <p>This viewer uses an orthographic camera and a cool background. It is independent from the Laurana viewer: orbiting, zooming, fitting, or switching tools does not affect the other scene.</p>
+      </article>
+      <div class="viewer-panel">
+        <div class="viewer-label">Viewer 2 · orthographic</div>
+        <div class="viewer" id="viewer-two"></div>
+      </div>
+    </section>
+
+    <footer class="band">
+      <p>Both viewers use the same newHOP distribution and can be embedded alongside ordinary page content.</p>
+    </footer>
+  </main>
+
+  <script type="module">
+    import { Presenter, Toolbar } from '../src/index.ts';
+
+    const viewerOne = new Presenter({ mount: 'viewer-one' });
+    new Toolbar(viewerOne, { position: 'bottom-center' });
+
+    const viewerTwo = new Presenter({ mount: 'viewer-two' });
+    new Toolbar(viewerTwo, { position: 'bottom-center' });
+
+    await viewerOne.setScene({
+      world: {
+        background: 0x3b3028,
+        camera: { type: 'perspective', fov: 42 }
+      },
+      lighting: {
+        lights: {
+          key: {
+            type: 'directional',
+            enabled: true,
+            color: 0xfff1d6,
+            intensity: 2.2,
+            position: [500, 900, 700],
+            target: [0, 100, 0]
+          },
+          fill: {
+            type: 'hemisphere',
+            enabled: true,
+            color: 0xdbeafe,
+            groundColor: 0x3f3028,
+            intensity: 1.4
+          }
+        }
+      },
+      navigation: {
+        type: 'turntable',
+        upAxis: 'y',
+        homeView: { target: [0, 100, 0], azimuth: -35, elevation: 18, distance: 1800 },
+        limits: { distance: [500, 3000], azimuth: 'free', elevation: [-80, 80] }
+      },
+      objects: {
+        laurana: {
+          file: 'models/laurana.ply',
+          color: 0xd9e2ec,
+          tags: ['portrait']
+        }
+      }
+    });
+
+    await viewerTwo.setScene({
+      world: {
+        background: 0x172033,
+        camera: { type: 'orthographic', fov: 42 }
+      },
+      lighting: {
+        lights: {
+          key: {
+            type: 'directional',
+            enabled: true,
+            color: 0xb9d7ff,
+            intensity: 2.4,
+            position: [-500, 900, 700],
+            target: [0, 100, 0]
+          },
+          fill: {
+            type: 'hemisphere',
+            enabled: true,
+            color: 0xdbeafe,
+            groundColor: 0x253047,
+            intensity: 1.6
+          }
+        }
+      },
+      navigation: {
+        type: 'turntable',
+        upAxis: 'y',
+        homeView: { target: [0, 100, 0], azimuth: 35, elevation: 18, distance: 1200 },
+        limits: { distance: [400, 2400], azimuth: 'free', elevation: [-80, 80] }
+      },
+      objects: {
+        gargoyle: {
+          file: 'models/gargo.nxz',
+          color: 0xa5b4fc,
+          scale: [2, 2, 2],
+          tags: ['sculpture']
+        }
+      }
+    });
+  </script>
+</body>
+</html>
