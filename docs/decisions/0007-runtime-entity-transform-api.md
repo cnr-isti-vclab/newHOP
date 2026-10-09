@@ -1,6 +1,6 @@
 # ADR 0007: Runtime Entity Transforms Use Presenter Get/Set Methods
 
-- Status: accepted
+- Status: superseded by ADR 0019
 - Date: 2026-09-17
 
 ## Context

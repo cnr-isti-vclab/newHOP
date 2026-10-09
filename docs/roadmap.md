@@ -27,6 +27,8 @@ This is a working plan, not a promise of release dates. Keep entries small enoug
 
 - Document and validate the remaining `world` and `lighting` properties.
 - Document helpers and their scene-extent behavior.
+- Design a top-level `config` block for viewer behavior and presentation, distinct from the scene content managed by the viewer. Define ownership for renderer and shadow policy, measurement and picking appearance, and optional UI behavior; keep the public schema capability-oriented rather than exposing arbitrary Three.js properties.
+- Decide which viewer settings belong in `Presenter` construction, scene loading, or runtime methods, and consider an explicitly advanced Three.js escape hatch only after the stable configuration surface is defined.
 - Decide how remaining reserved visual flags such as `clippable` and `measurable` should become operational.
 - Extend runtime transform APIs only if later use cases require additional constraints or animation support.
 

@@ -286,8 +286,22 @@ export class Presenter {
     return this.sceneBounds.clone();
   }
 
-  getEntityTransform(id: string): EntityTransformSnapshot {
-    return this.getUnambiguousEntityManager(id).getTransform(id);
+  getObjectTransform(id: string): EntityTransformSnapshot {
+    return this.objectManager.getTransform(id);
+  }
+
+  setObjectTransform(id: string, transform: EntityTransform): void {
+    this.objectManager.setTransform(id, transform);
+    this.refreshSceneBounds();
+  }
+
+  getSpotTransform(id: string): EntityTransformSnapshot {
+    return this.spotManager.getTransform(id);
+  }
+
+  setSpotTransform(id: string, transform: EntityTransform): void {
+    this.spotManager.setTransform(id, transform);
+    this.refreshSceneBounds();
   }
 
   getObjectAppearance(id: string): ObjectAppearance {
@@ -304,11 +318,6 @@ export class Presenter {
 
   setObjectMaterial(id: string, material: Partial<MaterialProperties>): void {
     this.objectManager.setMaterial(id, material);
-  }
-
-  setEntityTransform(id: string, transform: EntityTransform): void {
-    this.getUnambiguousEntityManager(id).setTransform(id, transform);
-    this.refreshSceneBounds();
   }
 
   getSceneTransform(): SceneTransformSnapshot {

@@ -115,7 +115,7 @@ presenter.setSpotHighlighted('hotspotA', true);
 presenter.setSpotHighlighted('hotspotA', false);
 
 presenter.removeSpot('hotspotA');</code></pre>
-    <p>Spot transforms use the same <code>position</code>, <code>rotation</code>, <code>scale</code>, and <code>matrix</code> declarations as objects. The shared <code>presenter.getEntityTransform(id)</code> and <code>presenter.setEntityTransform(id, update)</code> methods work for both namespaces; use an identifier that is unambiguous or keep object and spot identifiers distinct when calling them.</p>
+    <p>Spot transforms use the same <code>position</code>, <code>rotation</code>, <code>scale</code>, and <code>matrix</code> declarations as objects. Use <code>presenter.getSpotTransform(id)</code> and <code>presenter.setSpotTransform(id, update)</code> to address the spot namespace explicitly, including when an object has the same identifier.</p>
 
     <h2>Spot clicks</h2>
     <p>Assign <code>onSpotClicked</code> for the simple 3DHOP-compatible form. The callback receives the clicked spot identifier first. Spot clicks are generated on primary-button release and are suppressed when the pointer movement is a navigation drag.</p>

@@ -177,9 +177,9 @@ unsubscribe();</code></pre>
       </tbody>
     </table>
 
-    <p>Use <code>presenter.getEntityTransform(id)</code> to read the current transform snapshot and <code>presenter.setEntityTransform(id, update)</code> for partial position, rotation, or scale changes, or a complete matrix update. Supplying a matrix switches to matrix mode; supplying component fields switches back to component mode. Do not combine matrix and component fields in one declaration or update.</p>
-    <pre><code>const transform = presenter.getEntityTransform('sculpture');
-presenter.setEntityTransform('sculpture', {
+    <p>Use <code>presenter.getObjectTransform(id)</code> to read the current transform snapshot and <code>presenter.setObjectTransform(id, update)</code> for partial position, rotation, or scale changes, or a complete matrix update. Supplying a matrix switches to matrix mode; supplying component fields switches back to component mode. Do not combine matrix and component fields in one declaration or update. The object-specific methods remain unambiguous when a spot has the same identifier.</p>
+    <pre><code>const transform = presenter.getObjectTransform('sculpture');
+presenter.setObjectTransform('sculpture', {
   position: [20, 0, 10],
   rotation: [0, 45, 0]
 });</code></pre>
@@ -217,7 +217,7 @@ presenter.setObjectAppearance('sculpture', {
         <tr><td><code>doubleSided</code></td><td>Controls whether both material faces render.</td><td><code>true</code> for OBJ, PLY, and Nexus; authored value for GLB/GLTF</td></tr>
       </tbody>
     </table>
-    <p><code>presenter.getObjectAppearance(id)</code> returns the grouped appearance state, including the default <code>color</code>, <code>alpha</code>, <code>transparent</code>, and <code>uniform</code> values. <code>presenter.setObjectAppearance(id, update)</code> accepts any combination of these properties, and <code>setColor</code>, <code>setAlpha</code>, and the appearance API update only the value they receive. Color remains inactive until uniform mode is enabled; alpha remains inactive until transparent mode is enabled. The API applies to objects only; spots retain their primitive-specific controls.</p>
+    <p><code>presenter.getObjectAppearance(id)</code> returns the grouped appearance state, including the default <code>color</code>, <code>alpha</code>, <code>transparent</code>, and <code>uniform</code> values. <code>presenter.setObjectAppearance(id, update)</code> accepts any combination of these properties and updates only the values supplied. Color remains inactive until uniform mode is enabled; alpha remains inactive until transparent mode is enabled. The API applies to objects only; spots retain their primitive-specific controls.</p>
 
     <h3>Material Properties</h3>
     <p>Objects can declare serializable material properties without replacing authored GLB/GLTF materials. Explicit values are applied after loading to every material in the object; unsupported properties are ignored. Appearance modifiers still control their stronger color, transparency, and shading behavior.</p>

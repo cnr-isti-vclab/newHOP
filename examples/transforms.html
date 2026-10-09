@@ -24,7 +24,7 @@
   <div id="viewer">
     <section class="panel" aria-labelledby="title">
       <h1 id="title">Runtime transform test</h1>
-      <p>These controls exercise <code>getEntityTransform()</code> and <code>setEntityTransform()</code> on the <code>gargo</code> entity.</p>
+      <p>These controls exercise <code>getObjectTransform()</code> and <code>setObjectTransform()</code> on the <code>gargo</code> entity.</p>
       <div class="actions">
         <button id="read" type="button">Read transform</button>
         <button id="move" type="button">Move +X 100</button>
@@ -53,27 +53,27 @@
     };
 
     function showTransform(message) {
-      const transform = presenter.getEntityTransform('gargo');
+      const transform = presenter.getObjectTransform('gargo');
       status.textContent = message;
       output.textContent = JSON.stringify(transform, null, 2);
     }
 
     function updateTransform(update, message) {
-      presenter.setEntityTransform('gargo', update);
+      presenter.setObjectTransform('gargo', update);
       showTransform(message);
     }
 
     document.getElementById('read').addEventListener('click', () => showTransform('Read current transform.'));
     document.getElementById('move').addEventListener('click', () => {
-      const transform = presenter.getEntityTransform('gargo');
+      const transform = presenter.getObjectTransform('gargo');
       updateTransform({ position: [transform.position[0] + 100, transform.position[1], transform.position[2]] }, 'Applied partial position update.');
     });
     document.getElementById('rotate').addEventListener('click', () => {
-      const transform = presenter.getEntityTransform('gargo');
+      const transform = presenter.getObjectTransform('gargo');
       updateTransform({ rotation: [transform.rotation[0], transform.rotation[1] + 45, transform.rotation[2]] }, 'Applied partial rotation update.');
     });
     document.getElementById('scale').addEventListener('click', () => {
-      const transform = presenter.getEntityTransform('gargo');
+      const transform = presenter.getObjectTransform('gargo');
       updateTransform({ scale: transform.scale.map((value) => value * 1.25) }, 'Applied partial scale update.');
     });
     document.getElementById('matrix').addEventListener('click', () => {
