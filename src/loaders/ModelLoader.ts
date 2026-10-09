@@ -81,6 +81,7 @@ export class ModelLoader {
               depthWrite: true
             }),
             onLoad: (loadedNexus: Nexus3D) => {
+              normalizeNexusColorAttribute(loadedNexus);
               loadedNexus.userData.newHOPNexus = loadedNexus;
               resolve(loadedNexus);
             }
@@ -191,6 +192,12 @@ function applyMaterialOverrides(object: THREE.Object3D, definition: ModelLoadDef
       if (definition.alpha !== undefined) material.opacity = definition.alpha;
     }
   });
+}
+
+function normalizeNexusColorAttribute(object: Nexus3D): void {
+  const color = object.geometry?.getAttribute('color');
+  if (!color || color.itemSize !== 4) return;
+  object.geometry.setAttribute('color', new THREE.BufferAttribute(new Float32Array(3), 3));
 }
 
 function isTranslucent(definition: Pick<ModelLoadDefinition, 'alpha'>): boolean {

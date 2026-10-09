@@ -59,10 +59,6 @@ This is a working plan, not a promise of release dates. Keep entries small enoug
 - Review the licenses and redistribution rights for bundled model and image assets separately from the source-code license.
 - Define the first repository snapshot, including whether generated minimal bundles and large demonstration assets belong in Git.
 
-## Open Bugs
-
-- Nexus `.nxz` model transparency remains incorrect in the advanced example. Enabling `transparent` without `uniform` does not reliably apply alpha; `uniform + transparent` currently behaves differently, and attempts to correct the depth state can affect Nexus patch ordering or streamed texture/color appearance. Reproduce with the Gargo model and the appearance panel's transparency and alpha controls.
-
 ## Open Questions
 
 - Should runtime state updates emit a richer event with source and phase, or is `TrackballStatus` sufficient?
