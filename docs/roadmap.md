@@ -13,6 +13,7 @@ This is a working plan, not a promise of release dates. Keep entries small enoug
 - Model loading supports Nexus, GLB/GLTF, PLY, OBJ, and STL.
 - GLB/GLTF clips are retained by name, with per-object playback, pause/resume/stop, declaration-time autoplay, time-based scrubbing, and frame-accurate playback-state listeners.
 - Static HTML documentation covers navigation, objects, and spots.
+- Static HTML documentation includes an Interaction reference covering tool ownership and the intended picking and click contracts.
 
 ## Next Priorities
 
@@ -41,7 +42,7 @@ This is a working plan, not a promise of release dates. Keep entries small enoug
 ### Tools and UI
 
 - Add examples for compass and minimap observers using `onNavigationChange`.
-- Clarify picking, measurement, and clipping ownership and event contracts.
+- Implement the object-only, drag-qualified generic picking contract described in `docs/interaction.html`, including managed entity identity and pointer input metadata.
 - Improve Toolbar customization and accessibility.
 
 ### Quality and Collaboration

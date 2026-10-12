@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>newHOP interaction</title>
+  <style>
+    :root { color-scheme: dark; --bg: #0b1120; --panel: #111827; --text: #e5e7eb; --muted: #aab4c3; --accent: #7dd3fc; --line: rgba(148, 163, 184, 0.24); }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: linear-gradient(145deg, #0b1120, #172033); color: var(--text); font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.6; }
+    main { width: min(980px, calc(100vw - 32px)); margin: 0 auto; padding: 44px 0 72px; }
+    nav { margin-bottom: 28px; } a { color: var(--accent); }
+    h1 { margin: 0 0 8px; font-size: clamp(2rem, 5vw, 3.2rem); }
+    h2 { margin: 42px 0 12px; font-size: 1.55rem; }
+    h3 { margin: 26px 0 8px; font-size: 1.1rem; }
+    .lede, .note { color: var(--muted); }
+    .note { padding: 14px 16px; border-left: 3px solid var(--accent); background: rgba(17, 24, 39, 0.8); }
+    pre { overflow-x: auto; margin: 14px 0 20px; padding: 16px; border: 1px solid var(--line); border-radius: 8px; background: #080d18; color: #dbeafe; }
+    code { font-family: Consolas, "Courier New", monospace; font-size: 0.92em; }
+    table { width: 100%; border-collapse: collapse; margin: 12px 0 24px; background: rgba(17, 24, 39, 0.66); }
+    th, td { padding: 10px 12px; border: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { color: var(--accent); font-weight: 600; }
+  </style>
+</head>
+<body>
+  <main>
+    <nav><a href="index.html">Documentation index</a> · <a href="../index.html">Examples</a></nav>
+    <h1>Interaction</h1>
+    <p class="lede">newHOP keeps camera navigation, object picking, hotspot activation, measurement, and clipping as separate tools. This page describes which tool owns each pointer interaction and which entities it can affect.</p>
+    <p class="note">Generic picking and spot clicks are completed-click interactions. A navigation drag must not activate either tool.</p>
+
+    <h2>Tool ownership</h2>
+    <table>
+      <thead><tr><th>Tool</th><th>Entry point</th><th>Scope</th></tr></thead>
+      <tbody>
+        <tr><td>Navigation</td><td><code>presenter.trackball</code></td><td>Camera orbit, pan, zoom, viewpoint changes, and double-click recentering.</td></tr>
+        <tr><td>Generic picking</td><td><code>presenter.picking</code></td><td>Managed objects only. Spots and helpers are excluded.</td></tr>
+        <tr><td>Spot clicks</td><td><code>onSpotClicked</code> or <code>on('spotclick', ...)</code></td><td>Entities from the <code>spots</code> block only.</td></tr>
+        <tr><td>Measurement</td><td><code>presenter.measurement</code></td><td>Measurement points and completed measurements.</td></tr>
+        <tr><td>Clipping</td><td><code>presenter.clipping</code></td><td>Section-plane visibility for participating scene content.</td></tr>
+      </tbody>
+    </table>
+
+    <h2>Generic object picking</h2>
+    <p>Enable picking mode and register one active pick handler. The handler is intended to receive a world-space intersection result when the pointer interaction qualifies as a click or tap.</p>
+    <pre><code>presenter.picking.setOnPick((result) =&gt; {
+  console.log('Object:', result.entityId);
+  console.log('Point:', result.point.toArray());
+});
+presenter.setPickingMode(true);</code></pre>
+    <p>The target generic-picking contract is intentionally object-only. It resolves a hit on imported child geometry back to its owning managed object, so application code can identify the newHOP object rather than depending on an incidental child Three.js node. Spots use their separate click API, and helpers never produce generic pick results. The current PickingManager implementation is being aligned with this contract.</p>
+    <p>Pointer down records the candidate interaction. The pick is resolved on pointer release only when movement remains within the click threshold. Pointer movement beyond 5 CSS pixels cancels the pending pick, and pointer cancellation discards it. This keeps orbit, pan, and other navigation gestures from invoking the pick handler.</p>
+    <p>Once implemented, the pick result will expose the world-space <code>point</code>, an intersection <code>normal</code>, the low-level hit <code>object</code>, the owning managed object identity, and pointer input metadata such as button, pressed buttons, pointer type, and keyboard modifiers. The exact TypeScript shape follows the PickingManager implementation.</p>
+    <p>Picking does not currently define application-level <code>pickable</code> or pick-through policy. Those behaviors remain application-dependent and are intentionally deferred.</p>
+
+    <h2>Spot clicks</h2>
+    <p>Spots are interactive annotations with their own namespace and event contract. Spot clicks are independent of generic picking mode and are dispatched only for completed primary-button interactions.</p>
+    <pre><code>presenter.onSpotClicked = (id, event) =&gt; {
+  console.log('Clicked spot:', id, event.point.toArray());
+};
+
+presenter.on('spotclick', (event) =&gt; {
+  console.log(event.id, event.originalEvent.pointerType);
+});</code></pre>
+    <p>Use the compatibility callback when one application handler is enough. Use the subscription form when multiple parts of an application need the same event. See the <a href="spots.html">Spots reference</a> for the complete event shape and runtime spot API.</p>
+
+    <h2>Navigation input</h2>
+    <p>The supported navigation mode is turntable. Left-button dragging orbits. Shift plus left-button, middle-button, and right-button dragging pan. The wheel controls zoom. Touch input supports one-finger orbit, two-finger pan, and pinch zoom.</p>
+    <p>A stationary right-button click leaves the browser context menu available. The context menu is suppressed only after a right-button drag. Double-clicking ordinary scene content recenters navigation on the picked world point; hotspot double-clicks are ignored.</p>
+    <p>See the <a href="navigation.html">Navigation and Trackball reference</a> for viewpoint configuration, limits, input locking, and runtime navigation controls.</p>
+
+    <h2>Measurement and clipping</h2>
+    <p>Measurement is enabled with <code>presenter.setMeasurementMode(true)</code>. Applications can subscribe to completed measurements through the measurement manager. Measurement input is separate from generic picking, so enabling one tool does not implicitly enable the other.</p>
+    <p>Clipping is configured with <code>presenter.setClipPlane(axis, offset, enabled)</code>. The clipping manager owns section-plane state; it does not change which objects are eligible for generic picking.</p>
+
+    <h2>Related references</h2>
+    <p>Use the <a href="objects.html">Objects reference</a> for managed object definitions and the <a href="architecture.md">architecture notes</a> for runtime ownership. The <a href="roadmap.md">roadmap</a> records open interaction and tool-contract work.</p>
+  </main>
+</body>
+</html>
