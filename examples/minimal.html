@@ -15,7 +15,10 @@
     import { Presenter, Toolbar } from '../src/index.ts';
 
     const presenter = new Presenter({ mount: 'viewer' });
-    new Toolbar(presenter, { position: 'bottom-center' });
+    new Toolbar(presenter, {
+      position: 'bottom-center',
+      buttons: ['home', 'fit', 'zoomIn', 'zoomOut', 'pickpoint', 'fullscreen']
+    });
 
     presenter.measurement.setOnComplete((result) => {
       console.log('Measurement:', result.distance.toFixed(3), 'units');
@@ -49,7 +52,6 @@
       }
     }).then(() => {
       presenter.setMeasurementMode(false);
-      presenter.setPickingMode(true);
       presenter.setClipPlane('x', 0.15, false);
     });
   </script>

@@ -15,7 +15,9 @@
   <script>
     const presenter = new newHOP.Presenter({ mount: 'viewer' });
 
-    new newHOP.Toolbar(presenter);
+    new newHOP.Toolbar(presenter, {
+      buttons: ['home', 'fit', 'zoomIn', 'zoomOut', 'pickpoint', 'fullscreen']
+    });
 
     presenter.setScene({
       world: {

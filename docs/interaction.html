@@ -47,11 +47,14 @@
   console.log('Object:', result.entityId);
   console.log('Point:', result.point.toArray());
 });
-presenter.setPickingMode(true);</code></pre>
-    <p>The target generic-picking contract is intentionally object-only. It resolves a hit on imported child geometry back to its owning managed object, so application code can identify the newHOP object rather than depending on an incidental child Three.js node. Spots use their separate click API, and helpers never produce generic pick results. The current PickingManager implementation is being aligned with this contract.</p>
+presenter.setPickingMode(true, {
+  marker: { size: 5, color: 0xff5533 }
+});</code></pre>
+    <p>The generic-picking contract is intentionally object-only. It resolves a hit on imported child geometry back to its owning managed object, so application code can identify the newHOP object rather than depending on an incidental child Three.js node. Spots use their separate click API, and helpers never produce generic pick results.</p>
     <p>Pointer down records the candidate interaction. The pick is resolved on pointer release only when movement remains within the click threshold. Pointer movement beyond 5 CSS pixels cancels the pending pick, and pointer cancellation discards it. This keeps orbit, pan, and other navigation gestures from invoking the pick handler.</p>
     <p>Once implemented, the pick result will expose the world-space <code>point</code>, an intersection <code>normal</code>, the low-level hit <code>object</code>, the owning managed object identity, and pointer input metadata such as button, pressed buttons, pointer type, and keyboard modifiers. The exact TypeScript shape follows the PickingManager implementation.</p>
     <p>Picking does not currently define application-level <code>pickable</code> or pick-through policy. Those behaviors remain application-dependent and are intentionally deferred.</p>
+    <p>Picking mode displays one unlit feedback point at the latest picked position by default. It remains hidden until the first successful pick and uses depth testing, so geometry can occlude it. The default <code>marker.depthOffset</code> is <code>0.5</code> screen pixels toward the camera, avoiding surface z-fighting without assuming whether world units are millimeters or meters. Configure <code>marker.visible</code>, <code>marker.size</code> in CSS pixels, <code>marker.color</code>, <code>marker.opacity</code>, <code>marker.depthTest</code>, and <code>marker.depthOffset</code> through the optional second argument to <code>setPickingMode</code>. For an always-visible translucent point, use <code>{ depthTest: false, opacity: 0.3 }</code>. The marker is hidden and cleared when picking mode is disabled. The optional basic toolbar exposes the same interaction as a <code>pickpoint</code> button. Its attached panel shows the picked managed object ID and point as <code>[x, y, z]</code>; it remains hidden until pickpoint mode is active.</p>
 
     <h2>Spot clicks</h2>
     <p>Spots are interactive annotations with their own namespace and event contract. Spot clicks are independent of generic picking mode and are dispatched only for completed primary-button interactions.</p>

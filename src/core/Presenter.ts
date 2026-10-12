@@ -5,7 +5,7 @@ import { EntityManager } from '../managers/EntityManager';
 import { ModelLoader } from '../loaders/ModelLoader';
 import { Trackball, type TrackballChangeListener, type TrackballStatus, type ViewDirection, type Viewpoint } from '../controls/Trackball';
 import { MeasurementManager } from '../managers/MeasurementManager';
-import { PickingManager } from '../managers/PickingManager';
+import { PickingManager, type PickingOptions } from '../managers/PickingManager';
 import { ClippingManager } from '../managers/ClippingManager';
 import { LightingManager, type SceneLightingDescription } from '../managers/LightingManager';
 import { VERSION } from '../version';
@@ -43,6 +43,7 @@ export class Presenter {
   private readonly mount: HTMLElement;
   private readonly root = new THREE.Group();
   private readonly helperRoot = new THREE.Group();
+  private readonly pickingOverlayRoot = new THREE.Group();
   private readonly extentHelpers = new Set<THREE.Box3Helper>();
   private readonly extentGrids = new Map<THREE.GridHelper, { minimumSize: number; initialSize: number }>();
   private backgroundTexture?: THREE.Texture;
@@ -89,11 +90,12 @@ export class Presenter {
     this.scene.add(this.perspectiveCamera);
     this.trackball = new Trackball(this.camera, this.renderer.domElement);
     this.measurement = new MeasurementManager(this.root, this.camera, this.renderer.domElement);
-    this.picking = new PickingManager(this.root, this.camera, this.renderer.domElement);
+    this.picking = new PickingManager(this.root, this.camera, this.renderer.domElement, this.pickingOverlayRoot);
     this.clipping = new ClippingManager(this.root);
     this.lighting = new LightingManager(this.scene, this.camera, () => this.trackball.getUpAxis());
     this.scene.add(this.root);
     this.scene.add(this.helperRoot);
+    this.scene.add(this.pickingOverlayRoot);
     const modelLoader = new ModelLoader({ renderer: this.renderer });
     const objectRoot = new THREE.Group();
     const spotRoot = new THREE.Group();
@@ -554,8 +556,8 @@ export class Presenter {
     this.measurement.setEnabled(enabled);
   }
 
-  setPickingMode(enabled: boolean): void {
-    this.picking.setEnabled(enabled);
+  setPickingMode(enabled: boolean, options?: PickingOptions): void {
+    this.picking.setEnabled(enabled, options);
   }
 
   setFlashlightMode(enabled: boolean): void {
@@ -588,6 +590,7 @@ export class Presenter {
     this.spotClickListeners.clear();
     this.onSpotClicked = undefined;
     this.renderer.dispose();
+    this.picking.dispose();
     if (this.sparkRenderer) {
       this.scene.remove(this.sparkRenderer);
       this.sparkRenderer.geometry.dispose();
@@ -636,6 +639,7 @@ export class Presenter {
   };
 
   private readonly onPointerMove = (event: PointerEvent): void => {
+    this.picking.handlePointerMove(event);
     if (event.pointerId === this.spotClickPointerId) {
       const dx = event.clientX - this.spotClickStartX;
       const dy = event.clientY - this.spotClickStartY;
@@ -655,6 +659,7 @@ export class Presenter {
   };
 
   private readonly onPointerUp = (event: PointerEvent): void => {
+    this.picking.handlePointerUp(event);
     if (event.pointerId === this.flashlightPointerId) this.flashlightPointerId = -1;
     if (event.pointerId !== this.spotClickPointerId) return;
     const shouldClick = !this.spotClickMoved;
@@ -663,6 +668,7 @@ export class Presenter {
   };
 
   private readonly onPointerCancel = (event: PointerEvent): void => {
+    this.picking.handlePointerCancel(event);
     if (event.pointerId === this.flashlightPointerId) this.flashlightPointerId = -1;
     if (event.pointerId === this.spotClickPointerId) this.resetSpotClick();
   };

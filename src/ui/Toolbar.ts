@@ -1,3 +1,4 @@
+import * as THREE from 'three';
 import type { Presenter } from '../core/Presenter';
 
 export type ToolbarPosition =
@@ -5,7 +6,7 @@ export type ToolbarPosition =
   | 'bottom-left' | 'bottom-center' | 'bottom-right'
   | 'left-center' | 'right-center';
 
-export type ToolbarButtonId = 'home' | 'fit' | 'zoomIn' | 'zoomOut' | 'measure' | 'section' | 'camera' | 'fullscreen';
+export type ToolbarButtonId = 'home' | 'fit' | 'zoomIn' | 'zoomOut' | 'measure' | 'pickpoint' | 'section' | 'camera' | 'fullscreen';
 export type ToolbarItemId = ToolbarButtonId | 'spacer' | 'hardrule';
 export type ToolbarIcon = string | Node;
 
@@ -55,6 +56,8 @@ export class Toolbar {
   private readonly element: HTMLDivElement;
   private readonly specs: ToolbarSpec[];
   private readonly buttonEls = new Map<string, HTMLButtonElement>();
+  private readonly pickpointPanel?: HTMLDivElement;
+  private readonly unsubscribePickpoint?: () => void;
 
   constructor(private readonly presenter: Presenter, config: ToolbarConfig = {}) {
     injectStyles();
@@ -65,12 +68,15 @@ export class Toolbar {
 
     this.element = document.createElement('div');
     this.element.className = `newhop-toolbar newhop-toolbar--${config.position ?? 'bottom-center'}`;
+    const buttonGroup = document.createElement('div');
+    buttonGroup.className = 'newhop-toolbar__buttons';
+    this.element.appendChild(buttonGroup);
     for (const spec of this.specs) {
       if (spec.kind !== 'button') {
         const layout = document.createElement('div');
         layout.className = `newhop-toolbar__${spec.kind}`;
         layout.setAttribute('aria-hidden', 'true');
-        this.element.appendChild(layout);
+        buttonGroup.appendChild(layout);
         continue;
       }
       const button = document.createElement('button');
@@ -84,7 +90,16 @@ export class Toolbar {
         this.refresh();
       });
       this.buttonEls.set(spec.key, button);
-      this.element.appendChild(button);
+      buttonGroup.appendChild(button);
+      if (spec.id === 'pickpoint') {
+        const panel = createPickpointPanel();
+        this.pickpointPanel = panel;
+        this.element.appendChild(panel);
+        this.unsubscribePickpoint = this.presenter.picking.onPickResult((result) => {
+          if (!this.presenter.picking.isEnabled()) return;
+          updatePickpointPanel(panel, result);
+        });
+      }
     }
     mount.appendChild(this.element);
     this.refresh();
@@ -92,6 +107,7 @@ export class Toolbar {
 
   setPosition(position: ToolbarPosition): void {
     this.element.className = `newhop-toolbar newhop-toolbar--${position}`;
+    this.refresh();
   }
 
   refresh(): void {
@@ -101,9 +117,15 @@ export class Toolbar {
       if (!button) continue;
       button.classList.toggle('newhop-toolbar__button--active', spec.toggle && spec.isActive());
     }
+    if (this.pickpointPanel) {
+      const active = this.presenter.picking.isEnabled();
+      this.pickpointPanel.hidden = !active;
+      this.element.classList.toggle('newhop-toolbar--pickpoint-active', active);
+    }
   }
 
   dispose(): void {
+    this.unsubscribePickpoint?.();
     this.element.remove();
   }
 
@@ -149,6 +171,17 @@ export class Toolbar {
           toggle: true,
           onClick: () => presenter.setMeasurementMode(!presenter.measurement.isEnabled()),
           isActive: () => presenter.measurement.isEnabled()
+        };
+      case 'pickpoint':
+        return {
+          kind: 'button',
+          key: id,
+          id,
+          label: 'Pick point',
+          icon: '⌖',
+          toggle: true,
+          onClick: () => presenter.setPickingMode(!presenter.picking.isEnabled()),
+          isActive: () => presenter.picking.isEnabled()
         };
       case 'section':
         return {
@@ -238,20 +271,44 @@ function injectStyles(): void {
 .newhop-toolbar {
   position: absolute;
   display: flex;
+  align-items: flex-start;
   gap: 6px;
   padding: 6px;
   background: rgba(20, 22, 26, 0.75);
   border-radius: 8px;
   z-index: 10;
 }
+.newhop-toolbar__buttons { display: flex; gap: 6px; }
+.newhop-toolbar__pickpoint-panel {
+  min-width: 176px;
+  padding: 7px 9px;
+  border: 1px solid rgba(125, 211, 252, 0.35);
+  border-radius: 6px;
+  background: rgba(8, 13, 24, 0.92);
+  color: #dbeafe;
+  font: 12px/1.35 Consolas, "Courier New", monospace;
+  white-space: nowrap;
+}
+.newhop-toolbar__pickpoint-label { color: #aab4c3; }
+.newhop-toolbar__pickpoint-value { margin-top: 2px; }
+.newhop-toolbar--top-left,
+.newhop-toolbar--top-center,
+.newhop-toolbar--top-right { flex-direction: column; }
+.newhop-toolbar--bottom-left,
+.newhop-toolbar--bottom-center,
+.newhop-toolbar--bottom-right { flex-direction: column-reverse; }
+.newhop-toolbar--left-center { flex-direction: row; }
+.newhop-toolbar--right-center { flex-direction: row-reverse; }
+.newhop-toolbar--left-center .newhop-toolbar__buttons,
+.newhop-toolbar--right-center .newhop-toolbar__buttons { flex-direction: column; }
 .newhop-toolbar--top-left { top: 16px; left: 16px; }
 .newhop-toolbar--top-center { top: 16px; left: 50%; transform: translateX(-50%); }
 .newhop-toolbar--top-right { top: 16px; right: 16px; }
 .newhop-toolbar--bottom-left { bottom: 16px; left: 16px; }
 .newhop-toolbar--bottom-center { bottom: 16px; left: 50%; transform: translateX(-50%); }
 .newhop-toolbar--bottom-right { bottom: 16px; right: 16px; }
-.newhop-toolbar--left-center { top: 50%; left: 16px; transform: translateY(-50%); flex-direction: column; }
-.newhop-toolbar--right-center { top: 50%; right: 16px; transform: translateY(-50%); flex-direction: column; }
+.newhop-toolbar--left-center { top: 50%; left: 16px; transform: translateY(-50%); flex-direction: row; }
+.newhop-toolbar--right-center { top: 50%; right: 16px; transform: translateY(-50%); flex-direction: row-reverse; }
 .newhop-toolbar__button {
   width: 34px;
   height: 34px;
@@ -276,4 +333,27 @@ function injectStyles(): void {
 .newhop-toolbar--right-center .newhop-toolbar__hardrule { width: 22px; height: 1px; }
 `;
   document.head.appendChild(style);
+}
+
+function createPickpointPanel(): HTMLDivElement {
+  const panel = document.createElement('div');
+  panel.className = 'newhop-toolbar__pickpoint-panel';
+  panel.hidden = true;
+  panel.innerHTML = '<div class="newhop-toolbar__pickpoint-label">Object</div><div class="newhop-toolbar__pickpoint-value" data-pickpoint-object>Click an object</div><div class="newhop-toolbar__pickpoint-label">Point</div><div class="newhop-toolbar__pickpoint-value" data-pickpoint-point>[-, -, -]</div>';
+  return panel;
+}
+
+function updatePickpointPanel(panel: HTMLDivElement, result: { point: { x: number; y: number; z: number }; object: THREE.Object3D }): void {
+  let entityObject: THREE.Object3D | null = result.object;
+  while (entityObject && !entityObject.userData.entity) entityObject = entityObject.parent;
+  const entity = entityObject?.userData.entity as { id?: string; type?: string } | undefined;
+  if (!entity || (entity.type !== 'model' && entity.type !== 'geometry' && entity.type !== 'splat')) return;
+  const objectLabel = panel.querySelector<HTMLElement>('[data-pickpoint-object]');
+  const pointLabel = panel.querySelector<HTMLElement>('[data-pickpoint-point]');
+  if (objectLabel) objectLabel.textContent = entity?.id ?? 'Unknown object';
+  if (pointLabel) pointLabel.textContent = `[${formatCoordinate(result.point.x)}, ${formatCoordinate(result.point.y)}, ${formatCoordinate(result.point.z)}]`;
+}
+
+function formatCoordinate(value: number): string {
+  return value.toFixed(3);
 }

@@ -14,6 +14,7 @@ export { Trackball } from './controls/Trackball';
 export type { CameraViewpoint, FitOptions, TrackballChangeListener, TrackballConfig, TrackballMode, TrackballStatus, TurntableViewpoint, ViewDirection, Viewpoint } from './controls/Trackball';
 export { Toolbar } from './ui/Toolbar';
 export type { ToolbarButtonId, ToolbarConfig, ToolbarCustomButton, ToolbarIcon, ToolbarItem, ToolbarItemId, ToolbarPosition } from './ui/Toolbar';
+export type { PickListener, PickMarkerOptions, PickResult, PickingOptions } from './managers/PickingManager';
 export type {
   EntityDefinition,
   CameraProjection,
