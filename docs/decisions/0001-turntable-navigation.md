@@ -1,6 +1,6 @@
 # ADR 0001: Turntable Is the Initial Supported Navigation Mode
 
-- Status: accepted
+- Status: superseded by ADR 0005
 - Date: 2026-09-17
 
 ## Context
@@ -9,7 +9,7 @@ newHOP needs a stable navigation model for experiments and application integrati
 
 ## Decision
 
-Treat `turntable` as the supported navigation mode for now. Keep `sphere` in the type system as a reserved option, but do not promise behavioral compatibility between the two modes.
+Treat `turntable` as the initial supported navigation mode. Keep its orbit state stable while leaving room for a distinct sphere state model.
 
 Turntable viewpoints use:
 
@@ -24,7 +24,5 @@ Turntable viewpoints use:
 
 ## Consequences
 
-- The current documentation can describe one coherent state model.
-- `homeView`, limits, speed, reset, jump, animation, and subscriptions can be validated against turntable behavior.
-- Sphere navigation may later require different viewpoint, limit, and interaction types.
-- Existing public names should be revisited when sphere support begins rather than forcing an artificial shared abstraction.
+- The initial API was intentionally turntable-focused.
+- Sphere navigation is now documented separately in ADR 0005 and the navigation reference.

@@ -3,7 +3,8 @@ import { SparkRenderer } from '@sparkjsdev/spark';
 import type { AnimationClipInfo, CameraProjection, CameraType, EntityDefinition, EntityTransform, EntityTransformSnapshot, GeometryEntity, HelperDefinition, HotspotEntity, HotspotPrimitive, MaterialProperties, ModelEntity, ObjectAnimationOptions, ObjectAnimationState, ObjectAppearance, SceneDescription, SceneObjectDefinition, SceneTransform, SceneTransformSnapshot, SplatEntity, SpotAppearance, SpotDefinition, WorldBackground } from '../types/SceneTypes';
 import { EntityManager } from '../managers/EntityManager';
 import { ModelLoader } from '../loaders/ModelLoader';
-import { Trackball, type TrackballChangeListener, type TrackballStatus, type ViewDirection, type Viewpoint } from '../controls/Trackball';
+import { Trackball, type TrackballChangeListener, type TrackballMode, type TrackballStatus, type ViewDirection, type Viewpoint } from '../controls/Trackball';
+import { TrackballGizmo } from '../controls/TrackballGizmo';
 import { MeasurementManager } from '../managers/MeasurementManager';
 import { PickingManager, type PickingOptions } from '../managers/PickingManager';
 import { ClippingManager } from '../managers/ClippingManager';
@@ -35,6 +36,7 @@ export class Presenter {
   readonly orthographicCamera: THREE.OrthographicCamera;
   readonly renderer: THREE.WebGLRenderer;
   readonly trackball: Trackball;
+  readonly trackballGizmo: TrackballGizmo;
   readonly measurement: MeasurementManager;
   readonly picking: PickingManager;
   readonly clipping: ClippingManager;
@@ -44,6 +46,7 @@ export class Presenter {
   private readonly root = new THREE.Group();
   private readonly helperRoot = new THREE.Group();
   private readonly pickingOverlayRoot = new THREE.Group();
+  private readonly navigationOverlayRoot = new THREE.Group();
   private readonly extentHelpers = new Set<THREE.Box3Helper>();
   private readonly extentGrids = new Map<THREE.GridHelper, { minimumSize: number; initialSize: number }>();
   private backgroundTexture?: THREE.Texture;
@@ -89,6 +92,7 @@ export class Presenter {
     this.mount.appendChild(this.renderer.domElement);
     this.scene.add(this.perspectiveCamera);
     this.trackball = new Trackball(this.camera, this.renderer.domElement);
+    this.trackballGizmo = new TrackballGizmo(this.camera);
     this.measurement = new MeasurementManager(this.root, this.camera, this.renderer.domElement);
     this.picking = new PickingManager(this.root, this.camera, this.renderer.domElement, this.pickingOverlayRoot);
     this.clipping = new ClippingManager(this.root);
@@ -96,6 +100,8 @@ export class Presenter {
     this.scene.add(this.root);
     this.scene.add(this.helperRoot);
     this.scene.add(this.pickingOverlayRoot);
+    this.scene.add(this.navigationOverlayRoot);
+    this.navigationOverlayRoot.add(this.trackballGizmo.getObject());
     const modelLoader = new ModelLoader({ renderer: this.renderer });
     const objectRoot = new THREE.Group();
     const spotRoot = new THREE.Group();
@@ -141,13 +147,11 @@ export class Presenter {
     this.applyCameraProjection();
     const navigation = sceneDescription.navigation;
     this.trackball.setUpAxis(navigation?.upAxis ?? 'y');
+    this.trackballGizmo.setConfig(navigation?.trackball);
     if (world?.background !== undefined) await this.setBackground(world.background);
     if (navigation?.type) this.trackball.setMode(navigation.type);
     if (navigation?.speed) this.trackball.setSpeed(navigation.speed);
     if (navigation?.limits) this.trackball.setLimits(navigation.limits);
-    if (navigation?.verticalAxisLocked !== undefined) {
-      this.trackball.setVerticalAxisLocked(navigation.verticalAxisLocked);
-    }
     this.lighting.update();
     if (navigation?.homeView) {
       this.trackball.setHomeView(navigation.homeView);
@@ -369,6 +373,14 @@ export class Presenter {
     return this.trackball.getStatus();
   }
 
+  setNavigationMode(mode: TrackballMode): void {
+    this.trackball.setMode(mode);
+  }
+
+  getNavigationMode(): TrackballMode {
+    return this.trackball.getStatus().mode;
+  }
+
   setNavigationEnabled(enabled: boolean): void {
     this.trackball.setNavigationEnabled(enabled);
   }
@@ -578,6 +590,7 @@ export class Presenter {
   dispose(): void {
     this.stop();
     this.trackball.dispose();
+    this.trackballGizmo.dispose();
     this.renderer.domElement.removeEventListener('pointerdown', this.onPointerDown);
     this.renderer.domElement.removeEventListener('pointermove', this.onPointerMove);
     this.renderer.domElement.removeEventListener('pointerup', this.onPointerUp);
@@ -703,7 +716,7 @@ export class Presenter {
     while (entityObject && !entityObject.userData.entity) entityObject = entityObject.parent;
     const entity = entityObject?.userData.entity as EntityDefinition | undefined;
     if (!entity || entity.type === 'hotspot') return;
-    this.trackball.recenterOn(result.point);
+    this.trackball.recenterOn(result.point, 0.85, 400);
   };
 
   private start(): void {
@@ -716,6 +729,11 @@ export class Presenter {
       const deltaSeconds = Math.min(Math.max((time - previousTime) / 1000, 0), 0.1);
       previousTime = time;
       this.trackball.update(deltaSeconds * 1000);
+      this.trackballGizmo.update(
+        this.trackball.getViewpoint().target,
+        this.mount.clientWidth || 1,
+        this.mount.clientHeight || 1
+      );
       this.objectManager.updateAnimations(deltaSeconds);
       this.spotManager.updateAnimations(deltaSeconds);
       this.lighting.update();

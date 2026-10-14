@@ -29,20 +29,20 @@
   <main>
     <nav><a href="index.html">Documentation index</a> · <a href="../index.html">Examples</a></nav>
     <h1>Navigation and Trackball</h1>
-    <p class="lede">The navigation block configures the camera interaction model. The current implementation is a custom turntable trackball with object-in-hand behavior, scene-aware fitting, authored limits, and programmatic viewpoint control.</p>
+    <p class="lede">The navigation block configures the camera interaction model. newHOP supports a constrained two-axis turntable and a full-sphere trackball with scene-aware fitting, authored limits, and programmatic viewpoint control.</p>
     <p class="note">Camera projection, scene backgrounds, and content alignment are part of the <a href="world.html">world block</a>, not navigation. See <a href="interaction.html">Interaction</a> for how navigation shares pointer input with picking and spot clicks.</p>
 
 <!------------------------------------------------------------------------------------------------------------->
     <h2>Navigation configuration example</h2>
-    <p>Example configuration for the navigation block, specifying the type, limits, and initial view.</p>
+    <p>Example configuration for the navigation block, specifying the mode, limits, and initial view. Turntable uses orbit angles; sphere uses an absolute camera pose.</p>
     <pre><code>
 navigation: {
-  type: 'turntable',
+  type: 'sphere',
   homeView: {
+    mode: 'sphere',
     target: [0, 50, 0],
-    azimuth: -35,
-    elevation: 18,
-    distance: 1000
+    position: [650, 420, 650],
+    quaternion: [-0.1757, 0.3757, 0.0728, 0.9070]
   },
   limits: {
     azimuth: [-90, 90],
@@ -62,45 +62,61 @@ navigation: {
     <p>General properties select the navigation mode and basic interaction behavior.</p>
 
     <pre><code>
-type: 'turntable',
-upAxis: 'y',
-verticalAxisLocked: true
+  type: 'turntable', // or 'sphere'
+  upAxis: 'y',
+  limits: { elevation: [-70, 70] } // turntable only
     </code></pre>
 
     <table>
       <thead><tr><th>Property</th><th>Meaning</th><th>Units</th><th>Default</th></tr></thead>
       <tbody>
-        <tr><td><code>type</code></td><td>Navigation mode. <code>turntable</code> is the current default; <code>sphere</code> is reserved for the alternate mode.</td><td>Identifier</td><td><code>turntable</code></td></tr>
+        <tr><td><code>type</code></td><td>Navigation mode. <code>turntable</code> uses target, azimuth, elevation, and distance; <code>sphere</code> uses full-sphere arcball rotation with an absolute camera pose.</td><td>Identifier</td><td><code>turntable</code></td></tr>
         <tr><td><code>upAxis</code></td><td>World axis treated as vertical by the camera orbit and base grid. Use <code>'y'</code> for <i>computer graphics</i> -style scenes or <code>'z'</code> for <i>survey and engineering</i> scenes.</td><td><code>'y' | 'z'</code></td><td><code>'y'</code></td></tr>
-        <tr><td><code>verticalAxisLocked</code></td><td>Prevents vertical axis while dragging.</td><td>Boolean</td><td><code>false</code></td></tr>
       </tbody>
     </table>
-    <p>At runtime, use the corresponding Trackball methods:</p>
+    <p>At runtime, use the corresponding Presenter or Trackball methods:</p>
     <pre><code>
+presenter.setNavigationMode('sphere');
+presenter.getNavigationMode();
 presenter.trackball.setMode('turntable');
 presenter.trackball.setUpAxis('z');
-presenter.trackball.setVerticalAxisLocked(true);
+presenter.trackball.setLimits({ elevation: [-20, 20] });
     </code></pre>
-    <p>The up-axis changes camera navigation and base-grid orientation only. Mesh coordinates, object transforms, picked points, and measurement results remain in their authored XYZ coordinate system. Pan limits remain literal world-axis <code>x</code>, <code>y</code>, and <code>z</code> ranges.</p>
+    <p>The up-axis changes camera navigation, sphere default/conversion orientation, background orientation, and base-grid orientation only. Mesh coordinates, object transforms, picked points, and measurement results remain in their authored XYZ coordinate system. Pan limits remain literal world-axis <code>x</code>, <code>y</code>, and <code>z</code> ranges.</p>
+
+    <h3>Trackball visualizer</h3>
+    <p>The optional navigation trackball is a non-pickable overlay centered on the current navigation target. It follows recentering and camera changes without contributing to scene bounds, clipping, measurements, or picking.</p>
+    <pre><code>navigation: {
+  type: 'sphere',
+  trackball: {
+    visible: true,
+    size: 140,
+    axisColors: { x: 0xef4444, y: 0x22c55e, z: 0x3b82f6 },
+    opacity: 0.8,
+    axes: true,
+    rings: true
+  }
+}</code></pre>
+  <p>The gizmo uses depth testing, so portions behind scene geometry are hidden. By default its X, Y, and Z axes and matching rings are red, green, and blue. Set <code>color</code> to use one color for all components, or override individual components with <code>axisColors</code>.</p>
 
 <!------------------------------------------------------------------------------------------------------------->
     <h2>Touch Interaction</h2>
-    <p>Turntable navigation supports touch devices without changing the mouse and keyboard interaction model.</p>
+    <p>Both navigation modes support touch devices without changing the mouse and keyboard interaction model.</p>
     <table>
       <thead><tr><th>Gesture</th><th>Action</th></tr></thead>
       <tbody>
         <tr><td>Single tap</td><td>Remains available for picking and hotspot activation when those features are enabled.</td></tr>
-        <tr><td>One-finger drag</td><td>Orbit around the turntable.</td></tr>
+        <tr><td>One-finger drag</td><td>Orbit around the target. Turntable mode uses two axes; sphere mode uses full arcball rotation.</td></tr>
         <tr><td>Two-finger drag</td><td>Pan using the movement of the two-finger centroid.</td></tr>
         <tr><td>Pinch</td><td>Zoom. In orthographic mode this changes the frustum scale; in perspective mode it changes navigation distance.</td></tr>
-        <tr><td>Two-finger twist</td><td>Ignored in turntable mode. Twist is reserved for a future sphere-trackball interaction.</td></tr>
+        <tr><td>Two-finger twist</td><td>Ignored in both modes.</td></tr>
       </tbody>
     </table>
     <p>Touch navigation uses the same public Trackball navigation state and respects the configured limits. Applications combining touch navigation with picking or hotspot activation should use a small movement threshold to distinguish a tap from a drag. Double-tap behavior is not currently part of the Trackball touch contract.</p>
 
 <!------------------------------------------------------------------------------------------------------------->
     <h2>Home View</h2>
-    <p>Specifies the view restored by the initial scene setup and by Trackball reset operations, including target, azimuth, elevation, and distance.</p>
+    <p>Specifies the view restored by the initial scene setup and by Trackball reset operations. Turntable home views use target, azimuth, elevation, and distance. Sphere home views use target, position, and quaternion. If no home view is supplied, sphere mode uses an axis-compatible default orbit toward the origin and derives its orientation from the configured <code>upAxis</code>.</p>
     <pre><code>
 homeView: {
   target: [0, 50, 0],
@@ -109,14 +125,22 @@ homeView: {
   distance: 1000
 }
     </code></pre>
+    <pre><code>
+homeView: {
+  mode: 'sphere',
+  target: [0, 50, 0],
+  position: [650, 420, 650],
+  quaternion: [-0.1757, 0.3757, 0.0728, 0.9070]
+}
+    </code></pre>
     
     <table>
       <thead><tr><th>Property</th><th>Meaning</th><th>Units</th><th>Default</th></tr></thead>
       <tbody>
-        <tr><td><code>homeView.target</code></td><td>Home point around which the camera orbits. If omitted, it is the computed scene center.</td><td>Scene units</td><td>Scene center</td></tr>
-        <tr><td><code>homeView.azimuth</code></td><td>Horizontal orbit angle. If omitted, it is frontal view. </td><td>Degrees</td><td><code>0</code></td></tr>
-        <tr><td><code>homeView.elevation</code></td><td>Vertical orbit angle. If omitted, it is no elevation.</td><td>Degrees</td><td><code>0</code></td></tr>
-        <tr><td><code>homeView.distance</code></td><td>Home camera distance. If omitted, it is fitted from scene bounds.</td><td>Scene units</td><td>Automatic fit</td></tr>
+        <tr><td><code>homeView.target</code></td><td>Turntable orbit target or sphere camera look-at target.</td><td>Scene units</td><td>Scene center</td></tr>
+        <tr><td><code>homeView.azimuth</code>, <code>elevation</code></td><td>Turntable orbit angles. Elevation may reach, but never exceed, <code>-90</code> or <code>90</code> degrees.</td><td>Degrees</td><td><code>0</code></td></tr>
+        <tr><td><code>homeView.distance</code></td><td>Turntable home camera distance. If omitted, it is fitted from scene bounds.</td><td>Scene units</td><td>Automatic fit</td></tr>
+        <tr><td><code>homeView.position</code>, <code>quaternion</code></td><td>Sphere camera position and Three.js-order camera quaternion. Supply both for an explicit sphere pose.</td><td>Scene units / quaternion</td><td>Axis-compatible default</td></tr>
       </tbody>
     </table>
     <p>At runtime, update the home view with the same object structure:</p>
@@ -131,8 +155,8 @@ homeView: {
 
 <!------------------------------------------------------------------------------------------------------------->
     <h2>Limits</h2>
-    <p>Specifies the limits for camera navigation, including azimuth, elevation, distance, and pan ranges.</p>
-    <p>Azimuth and elevation limits are angular ranges in degrees. Distance and pan limits use scene units. Pan limits are absolute world-space target coordinates.</p>
+    <p>Specifies the limits for camera navigation, including turntable angles, camera distance, and pan ranges.</p>
+    <p>Azimuth and elevation limits are angular ranges in degrees for turntable mode. Sphere mode has no azimuth/elevation constraint because its quaternion is the canonical orientation. Distance and pan limits use scene units. Pan limits are absolute world-space target coordinates.</p>
     <pre><code>limits: {
   azimuth: [-90, 90],
   elevation: [-10, 60],
@@ -147,15 +171,15 @@ homeView: {
     <table>
       <thead><tr><th>Property</th><th>Meaning</th><th>Units</th><th>Default</th></tr></thead>
       <tbody>
-        <tr><td><code>azimuth</code></td><td>Horizontal rotation range. Use <code>'free'</code> or omit it for unlimited rotation.</td><td>Degrees</td><td>Free</td></tr>
-        <tr><td><code>elevation</code></td><td>Vertical rotation range. Values are clamped below the poles.</td><td>Degrees</td><td><code>[-70, 70]</code></td></tr>
+        <tr><td><code>azimuth</code></td><td>Turntable horizontal rotation range. Use <code>'free'</code> or omit it for unlimited rotation.</td><td>Degrees</td><td>Free</td></tr>
+        <tr><td><code>elevation</code></td><td>Turntable vertical rotation range. Values are clamped to the poles at <code>-90</code> and <code>90</code> degrees.</td><td>Degrees</td><td><code>[-90, 90]</code></td></tr>
         <tr><td><code>distance</code></td><td>Minimum and maximum camera distance from the target.</td><td>Scene units</td><td><code>[0.01, 10000]</code></td></tr>
         <tr><td><code>pan.x</code></td><td>Absolute minimum and maximum target X coordinate.</td><td>Scene units</td><td>Free</td></tr>
         <tr><td><code>pan.y</code></td><td>Absolute minimum and maximum target Y coordinate.</td><td>Scene units</td><td>Free</td></tr>
         <tr><td><code>pan.z</code></td><td>Absolute minimum and maximum target Z coordinate.</td><td>Scene units</td><td>Free</td></tr>
       </tbody>
     </table>
-    <p>At runtime, pass a partial or complete limits object to the Trackball:</p>
+    <p>At runtime, pass a partial or complete limits object to the Trackball. These angular limits do not constrain sphere arcball rotation:</p>
     <pre><code>presenter.trackball.setLimits({
   azimuth: [-90, 90],
   elevation: [-10, 60],
@@ -244,7 +268,8 @@ unsubscribe();
 <!------------------------------------------------------------------------------------------------------------->
     <h2>Controlling Navigation at Runtime</h2>
     <p>Navigation can be programmatically controlled at runtime using viewpoints, changing the camera position and orientation as needed.</p>
-    <p>For the turntable trackball, a viewpoint is defined by the orbit target and its three orbit parameters: azimuth, elevation, and distance. These are the native Trackball state values.</p>
+    <p>A viewpoint uses the parameter set of its navigation mode. If <code>mode</code> is omitted, the current mode is retained and the corresponding viewpoint fields are used; specify <code>mode</code> only when an operation should switch controllers.</p>
+    <p>For turntable, a viewpoint is defined by target, azimuth, elevation, and distance. For sphere, the canonical viewpoint is target, position, and quaternion. Sphere animation linearly interpolates target and position and uses quaternion slerp; all three use the same eased timeline and finish together.</p>
     <pre><code>
 const viewpoint = {
   target: [0, 50, 0],
@@ -257,11 +282,40 @@ presenter.jumpToViewpoint(viewpoint);
 presenter.animateToViewpoint(viewpoint);       // default: 1500 ms
 presenter.animateToViewpoint(viewpoint, 800);  // explicit duration
     </code></pre>
+    <pre><code>const sphereViewpoint = {
+  mode: 'sphere',
+  target: [0, 50, 0],
+  position: [650, 420, 650],
+  quaternion: [-0.1757, 0.3757, 0.0728, 0.9070]
+};
+
+presenter.animateToViewpoint(sphereViewpoint, 1200);</code></pre>
     <h3>Resetting to Home</h3>
     <p><code>reset()</code> returns the Trackball to the configured <code>homeView</code>. It is intended for Home buttons and shortcuts; use jump or animate for arbitrary viewpoints.</p>
     <pre><code>presenter.trackball.reset();</code></pre>
+    <h3>Viewpoint conversions</h3>
+    <p><code>getViewpoint()</code> and <code>setViewpoint()</code> use the precise canonical representation. Pure conversion helpers provide readable orbit values, camera poses, and column-major 3x3 rotation matrices without changing the Trackball's internal state.</p>
+    <pre><code>import {
+  sphereViewpointFromOrbit,
+  sphereViewpointToOrbit,
+  viewpointFromMatrix,
+  viewpointToMatrix
+} from '../src/index.ts';
+
+const view = sphereViewpointFromOrbit({
+  target: [0, 100, 0],
+  azimuth: 35,
+  elevation: 18,
+  distance: 1000,
+  roll: 0
+});
+presenter.jumpToViewpoint(view);
+
+const orbit = sphereViewpointToOrbit(presenter.trackball.getViewpoint());
+const matrixView = viewpointToMatrix(presenter.trackball.getViewpoint());
+const restored = viewpointFromMatrix(matrixView, 'sphere');</code></pre>
     <h3>Fitting the Scene</h3>
-    <p><code>presenter.fitToScene(direction, recenter, duration)</code> fits the object scene in the camera view. Fitting uses the object bounding-box corners directly, with no additional padding; helpers, grids, and spots do not contribute to the fit.</p>
+    <p><code>presenter.fitToScene(direction, recenter, duration)</code> fits the object scene in the camera view. In turntable mode, <code>direction</code> supplies azimuth and elevation. In sphere mode, fitting preserves the current camera direction and derives a canonical camera pose using <code>upAxis</code>. Fitting uses the object bounding-box corners directly, with no additional padding; helpers, grids, and spots do not contribute to the fit.</p>
     <table>
       <thead><tr><th>Parameter</th><th>Meaning</th><th>Default</th></tr></thead>
       <tbody>
@@ -318,7 +372,7 @@ presenter.setNavigationEnabled(true);
 
 <!------------------------------------------------------------------------------------------------------------->
     <h2>Double-click Re-centering</h2>
-    <p>Double-clicking a visible model or geometry entity recenters the turntable target on the picked surface point and zooms in slightly. Hotspots and helpers are ignored. The behavior is also disabled while navigation input is locked.</p>
+    <p>Double-clicking a visible model or geometry entity recenters the active navigation target on the picked surface point and zooms in slightly over a short animation. Hotspots and helpers are ignored. The behavior is also disabled while navigation input is locked.</p>
     <p>Programmatically, the same behavior is available through:</p>
     <pre><code>
 presenter.recenterOnEntityPoint(point);

@@ -27,7 +27,7 @@ Scene authoring is divided into named blocks:
 
 - `config`: general viewer behavior.
   - `world`: background, camera, and optional authored-content transform.
-- `navigation`: turntable navigation configuration.
+- `navigation`: turntable or full-sphere navigation configuration.
 - `lighting`: world lights and camera-relative flashlight.
 - `helpers`: axes, grid, and scene extent helpers.
 - `objects`: loaded models, Gaussian splats, or supplied Three.js geometry.
@@ -72,7 +72,7 @@ Current block contents can be enumerated without merging namespaces: `presenter.
 
 ## Navigation
 
-`turntable` is the supported navigation mode. `sphere` is reserved for a future navigation model and should not be treated as feature-complete. Navigation supports `upAxis: 'y' | 'z'`, defaulting to Y-up. The selected axis controls camera orbit semantics, camera up orientation, and base-grid orientation; it does not convert mesh, picking, or measurement coordinates.
+`Trackball` is the shared navigation façade. `turntable` provides constrained two-axis orbit, while `sphere` provides full-sphere arcball rotation. Both modes share pan, zoom, fitting, projection switching, touch input, viewpoint animation, and observers. Runtime mode switching preserves the camera pose when entering sphere mode. Returning to turntable preserves target, distance, and direction while canonicalizing roll to the configured up axis. Navigation can also expose an optional non-pickable, depth-tested `trackball` overlay centered on the live target; the overlay is kept separate from scene helpers and does not affect bounds, clipping, measurement, or picking. Navigation supports `upAxis: 'y' | 'z'`, defaulting to Y-up. The selected axis controls camera orbit semantics, camera up orientation, and base-grid orientation; it does not convert mesh, picking, or measurement coordinates.
 
 The canonical turntable viewpoint is:
 
@@ -84,6 +84,12 @@ The canonical turntable viewpoint is:
   distance: number
 }
 ```
+
+The canonical sphere viewpoint is an absolute camera pose with `target`, `position`, and a Three.js-order `quaternion`. If no sphere home view is authored, Trackball derives an axis-compatible default pose from `upAxis`. Sphere animation interpolates target and position linearly and quaternion orientation with slerp on one shared eased timeline; the three components finish together.
+
+Viewpoint operations retain the current navigation mode when `mode` is omitted. Supplying `mode` explicitly requests conversion or switching to the other state model.
+
+The package also exports pure viewpoint converters for orbit, camera-pose, and column-major 3x3 matrix forms. These converters are intentionally outside `getViewpoint()` and `setViewpoint()` so canonical state remains unambiguous and conversion never mutates navigation state. Orbit-to-sphere conversion uses the configured `upAxis`, including at exact turntable poles where azimuth determines camera roll.
 
 Navigation configuration is grouped into `homeView`, `limits`, and `speed`. Runtime configuration changes belong to `Trackball` and use the same structures as scene configuration:
 
@@ -97,7 +103,7 @@ trackball.setSpeed(speed);
 
 In the turntable input model, left-button dragging rotates, while Shift + left-button, middle-button, and right-button dragging pan. A stationary right-button click leaves the browser context menu available; the menu is suppressed only after a right-button drag. The mouse wheel controls zoom.
 
-The default elevation range is `[-70, 70]`. Author-requested pole limits such as `[-90, 90]` are stabilized internally with a small epsilon to avoid pole singularities.
+The default elevation range is `[-70, 70]`. Elevation limits may include the exact poles `-90` and `90`; at a pole, azimuth still determines camera roll and therefore the camera's up vector, even though it no longer changes the camera position.
 
 ## Scene Loading
 

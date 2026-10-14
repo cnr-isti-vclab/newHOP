@@ -4,7 +4,7 @@ This is a working plan, not a promise of release dates. Keep entries small enoug
 
 ## Current Baseline
 
-- Turntable Trackball navigation is the supported navigation mode.
+- Trackball navigation supports switchable turntable and full-sphere modes.
 - Scene blocks are established for config, world, navigation, lighting, helpers, objects, and spots.
 - Navigation has home view, limits, speed, runtime control, status subscriptions, reset, viewpoint animation, input locking, and double-click recentering.
 - Navigation supports Y-up and Z-up scenes without rewriting authored mesh or entity coordinates.
@@ -24,7 +24,7 @@ This is a working plan, not a promise of release dates. Keep entries small enoug
 - Add focused tests for limits, home view, animation interruption, subscriptions, and double-click recentering.
 - Improve the turntable interaction model based on real application experiments.
 - Decide whether named viewpoints should extend the existing save/restore API.
-- Define a separate state model for sphere navigation before implementing it.
+- Add focused tests for sphere arcball math, mode conversion, pose animation, sphere home views, and Y-up/Z-up pole conversions.
 
 ### Scene Blocks
 
@@ -66,7 +66,7 @@ This is a working plan, not a promise of release dates. Keep entries small enoug
 
 - Should runtime state updates emit a richer event with source and phase, or is `TrackballStatus` sufficient?
 - Should `reset()` support an optional animation duration?
-- Should scene-block types be split by navigation mode once sphere navigation begins?
+- Should scene-block types expose more explicit mode-specific home-view unions while preserving the current shared navigation block?
 - Which object and spot properties should be strict errors when they are currently only reserved?
 - Should animation playback be object-level only, or should a later API support synchronized timelines across multiple objects?
 - What default FPS, if any, should frame-based seeking use when the caller does not provide one?

@@ -190,10 +190,27 @@ export interface NavigationSpeed {
 }
 
 export interface NavigationHomeView {
+  mode?: NavigationType;
   target?: Vector3Tuple;
   azimuth?: number;
   elevation?: number;
   distance?: number;
+  position?: Vector3Tuple;
+  quaternion?: [number, number, number, number];
+}
+
+export interface NavigationTrackballConfig {
+  visible?: boolean;
+  size?: number;
+  color?: number;
+  axisColors?: {
+    x?: number;
+    y?: number;
+    z?: number;
+  };
+  opacity?: number;
+  axes?: boolean;
+  rings?: boolean;
 }
 
 export interface NavigationLimits {
@@ -210,10 +227,10 @@ export interface NavigationLimits {
 export interface NavigationConfig {
   type?: NavigationType;
   upAxis?: UpAxis;
-  verticalAxisLocked?: boolean;
   speed?: NavigationSpeed;
   limits?: NavigationLimits;
   homeView?: NavigationHomeView;
+  trackball?: NavigationTrackballConfig;
 }
 
 export type HelperType = 'axes' | 'grid' | 'box' | 'sceneextent' | 'scenebox';

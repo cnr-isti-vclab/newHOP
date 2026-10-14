@@ -40,7 +40,7 @@ Then open the URL reported by Vite. The root page lists the available examples.
 
 Useful examples include:
 
-- `examples/minimal.html` - basic viewer setup
+- `examples/basic.html` - basic viewer setup
 - `examples/advanced.html` - models, transforms, tools, clipping, picking, and measurement
 - `examples/animation.html` - GLB animation playback
 - `examples/splats.html` - Gaussian splat loading with `well_splat.ply`

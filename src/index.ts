@@ -11,7 +11,18 @@ export { ClippingManager } from './managers/ClippingManager';
 export { LightingManager } from './managers/LightingManager';
 export type { FlashlightOrientation } from './managers/LightingManager';
 export { Trackball } from './controls/Trackball';
-export type { CameraViewpoint, FitOptions, TrackballChangeListener, TrackballConfig, TrackballMode, TrackballStatus, TurntableViewpoint, ViewDirection, Viewpoint } from './controls/Trackball';
+export { TrackballGizmo } from './controls/TrackballGizmo';
+export {
+  sphereViewpointFromCamera,
+  sphereViewpointFromOrbit,
+  sphereViewpointToCamera,
+  sphereViewpointToOrbit,
+  turntableViewpointFromCamera,
+  turntableViewpointToCamera,
+  viewpointFromMatrix,
+  viewpointToMatrix
+} from './controls/Trackball';
+export type { CameraViewpoint, FitOptions, Matrix3Tuple, MatrixViewpoint, SphereOrbitView, SphereViewpoint, TrackballChangeListener, TrackballConfig, TrackballMode, TrackballStatus, TurntableOrbitView, TurntableViewpoint, ViewDirection, Viewpoint } from './controls/Trackball';
 export { Toolbar } from './ui/Toolbar';
 export type { ToolbarButtonId, ToolbarConfig, ToolbarCustomButton, ToolbarIcon, ToolbarItem, ToolbarItemId, ToolbarPosition } from './ui/Toolbar';
 export type { PickListener, PickMarkerOptions, PickResult, PickingOptions } from './managers/PickingManager';
@@ -42,6 +53,7 @@ export type {
   NavigationConfig,
   NavigationLimits,
   NavigationHomeView,
+  NavigationTrackballConfig,
   NavigationSpeed,
   NavigationType,
   UpAxis,

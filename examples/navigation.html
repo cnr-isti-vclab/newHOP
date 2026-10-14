@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>newHOP navigation modes</title>
+  <style>
+    :root { color-scheme: dark; --bg: #0f1720; --panel: rgba(15, 23, 32, 0.9); --text: #e5e7eb; --muted: #9ca3af; --accent: #7dd3fc; --line: rgba(148, 163, 184, 0.32); }
+    * { box-sizing: border-box; }
+    html, body, #viewer { width: 100%; height: 100%; margin: 0; }
+    body { overflow: hidden; background: var(--bg); color: var(--text); font-family: system-ui, sans-serif; }
+    #viewer { position: relative; }
+    .panel { position: absolute; top: 16px; left: 16px; z-index: 10; width: min(360px, calc(100vw - 32px)); padding: 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); backdrop-filter: blur(8px); }
+    h1 { margin: 0 0 4px; font-size: 1.1rem; }
+    p { margin: 0 0 12px; color: var(--muted); font-size: 0.82rem; line-height: 1.45; }
+    .actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+    button { min-height: 34px; padding: 7px 9px; border: 1px solid var(--line); border-radius: 5px; background: #1f2937; color: var(--text); cursor: pointer; font: inherit; font-size: 0.8rem; }
+    button:hover { border-color: var(--accent); color: var(--accent); }
+    .status { margin-top: 10px; color: var(--accent); font-size: 0.75rem; white-space: pre-line; }
+    pre { max-height: 180px; overflow: auto; margin: 10px 0 0; padding: 9px; border: 1px solid rgba(148, 163, 184, 0.2); border-radius: 5px; background: rgba(3, 7, 18, 0.55); color: #dbeafe; font-size: 0.68rem; }
+  </style>
+</head>
+<body>
+  <div id="viewer">
+    <section class="panel" aria-labelledby="title">
+      <h1 id="title">Navigation modes</h1>
+      <p>Drag to orbit, use Shift-drag to pan, and scroll to zoom. Switch modes while preserving the current camera pose; Animate viewpoint changes camera position and direction while keeping its target.</p>
+      <div class="actions">
+        <button id="turntable" type="button">Turntable</button>
+        <button id="sphere" type="button">Sphere</button>
+        <button id="home" type="button">Reset home</button>
+        <button id="fit" type="button">Fit scene</button>
+        <button id="animate" type="button">Animate viewpoint</button>
+        <button id="read" type="button">Read viewpoint</button>
+      </div>
+      <div class="status" id="status">Loading scene...</div>
+      <pre id="output">Waiting for navigation state...</pre>
+    </section>
+  </div>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { Presenter, Toolbar } from '../src/index.ts';
+
+    const presenter = new Presenter({ mount: 'viewer' });
+    new Toolbar(presenter, { position: 'bottom-center', buttons: ['home', 'fit', 'zoomIn', 'zoomOut', 'fullscreen'] });
+    const status = document.getElementById('status');
+    const output = document.getElementById('output');
+    const sphereHomeTarget = new THREE.Vector3(0, 100, 0);
+    const sphereHomePosition = new THREE.Vector3(0, 250, 900);
+    const sphereHomeQuaternion = new THREE.Quaternion().setFromRotationMatrix(
+      new THREE.Matrix4().lookAt(sphereHomePosition, sphereHomeTarget, new THREE.Vector3(0, 1, 0))
+    );
+
+    function showStatus(message) {
+      const navigation = presenter.getNavigationStatus();
+      status.textContent = `${message}\nMode: ${navigation.mode} | distance: ${navigation.distance.toFixed(1)} | elevation: ${navigation.elevation.toFixed(1)}°`;
+      output.textContent = JSON.stringify(presenter.trackball.getViewpoint(), null, 2);
+    }
+
+    presenter.onNavigationChange(() => showStatus('Navigation changed.'));
+    document.getElementById('turntable').addEventListener('click', () => {
+      presenter.setNavigationMode('turntable');
+      showStatus('Switched to turntable.');
+    });
+    document.getElementById('sphere').addEventListener('click', () => {
+      presenter.setNavigationMode('sphere');
+      showStatus('Switched to sphere.');
+    });
+    document.getElementById('home').addEventListener('click', () => {
+      presenter.trackball.reset();
+      showStatus('Reset to home.');
+    });
+    document.getElementById('fit').addEventListener('click', () => {
+      presenter.fitToScene(undefined, true, 500);
+      showStatus('Fitting scene.');
+    });
+    document.getElementById('animate').addEventListener('click', () => {
+      const target = presenter.getNavigationStatus().target;
+      const waypointTarget = new THREE.Vector3().fromArray(target);
+      const waypointPosition = new THREE.Vector3(650, 420, 650);
+      const waypointQuaternion = new THREE.Quaternion().setFromRotationMatrix(
+        new THREE.Matrix4().lookAt(waypointPosition, waypointTarget, new THREE.Vector3(0, 1, 0))
+      );
+      presenter.animateToViewpoint({
+        mode: 'sphere',
+        target,
+        position: waypointPosition.toArray(),
+        quaternion: waypointQuaternion.toArray()
+      }, 1200);
+      showStatus('Animating sphere viewpoint.');
+    });
+    document.getElementById('read').addEventListener('click', () => showStatus('Current viewpoint.'));
+
+    presenter.setScene({
+      world: { background: 0x0f1720, camera: { fov: 42 } },
+      navigation: {
+        type: 'sphere',
+        trackball: {
+          visible: true,
+          size: 150,
+          opacity: 0.85,
+          axes: true,
+          rings: true
+        },
+        homeView: {
+          mode: 'sphere',
+          target: sphereHomeTarget.toArray(),
+          position: sphereHomePosition.toArray(),
+          quaternion: sphereHomeQuaternion.toArray()
+        }
+      },
+      helpers: {
+        origin: { type: 'axes', size: 300, color: 0x7dd3fc },
+        floor: { type: 'grid', size: 30, spacing: 5, color: 0x64748b, opacity: 0.55 },
+        extent: { type: 'sceneextent' }
+      },
+      objects: {
+        gargo: { file: 'models/gargo.nxz', position: [0, 100, 0], color: 0xa55111, alpha: 0.9 }
+      }
+    }).then(() => showStatus('Scene ready.'));
+  </script>
+</body>
+</html>

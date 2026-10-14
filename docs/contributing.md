@@ -47,7 +47,7 @@ The dev task runs Vite from the workspace root at `http://127.0.0.1:5173/`. If p
 Useful URLs while the dev server is running:
 
 - `http://127.0.0.1:5173/`
-- `http://127.0.0.1:5173/examples/minimal.html`
+- `http://127.0.0.1:5173/examples/basic.html`
 - `http://127.0.0.1:5173/examples/advanced.html`
 - `http://127.0.0.1:5173/examples/animation.html`
 - `http://127.0.0.1:5173/examples/splats.html`
