@@ -2,6 +2,16 @@
 
 newHOP is a TypeScript and three.js successor to 3DHOP. It provides a Presenter for scene setup and a set of focused managers for loading, navigation, picking, measurement, clipping, lighting, and UI.
 
+## Audience Levels
+
+newHOP is middleware for third parties that build interactive 3D visualizations. The project distinguishes three use levels:
+
+- **Developer**: builds and maintains the newHOP source, then produces the distributable library and related bundles.
+- **Author**: consumes the distributed library to author a visualization application, typically a webpage with scene data, controls, and application-specific behavior.
+- **User**: accesses and interacts with the completed visualization webpage.
+
+This distinction is normative when discussing requirements and behavior. Library types, scene schemas, runtime APIs, defaults, and authoring documentation primarily serve authors; source organization, build output, tests, and architectural rules primarily serve developers; navigation, feedback, interaction, accessibility, and visible errors experienced in a finished page serve users. A change may affect more than one level, but its intended level should be clear when the distinction affects design or validation.
+
 ## Runtime Shape
 
 ```text
@@ -19,6 +29,10 @@ Presenter
 ```
 
 The Presenter owns the scene lifecycle and coordinates managers. Managers own focused behavior and should not reach into unrelated managers. `InteractionManager` owns the single auxiliary interaction mode (`none`, `pickpoint`, or `distance`) and routes click-qualified pointer events to only the active tool; navigation remains independent and always active. Picking owns an optional single-point feedback overlay attached to a dedicated Presenter overlay root, keeping it out of scene raycasts and helper resets. Applications activate tools with `setInteractionMode(mode, options?)`; each mode closes and cleans the previous mode before initialization. UI components such as `Toolbar` are optional API clients: they are distributed separately from the Presenter class, and applications may replace them with custom controls that call the same public methods. The package version is exported as `VERSION` and logged to the browser console whenever a Presenter is constructed.
+
+## Defaults and Runtime State
+
+Configurable features should expose a complete, readable defaults structure in the owning module. The structure is the reference point for initialization and, where possible, for runtime update normalization; fallback values should not be duplicated as unrelated literals across constructors and setters. Defaults are part of the feature contract: changes to them require corresponding updates to the relevant API documentation, examples, and validation. This keeps the intended “sensible by default” behavior visible to both authors and maintainers without requiring them to reconstruct it from control flow.
 
 The renderer enables antialiasing and shadow maps by default. Pass `shadows: false` to the `Presenter` constructor to disable shadow rendering for lightweight scenes. Runtime meshes cast and receive shadows automatically; individual scene lights opt into shadow casting with `castShadow: true`. The Presenter owns spot click semantics: it resolves hotspot entities through the shared picking raycaster and dispatches only completed primary-button clicks, keeping navigation drags from activating spots. Applications can use the compatibility `onSpotClicked` callback or the `spotclick` subscription event. The public interaction responsibilities and pointer ownership are summarized in [`docs/interaction.html`](interaction.html); generic object picking is being separated from the scene-wide raycast used by spot clicks and double-click recentering.
 

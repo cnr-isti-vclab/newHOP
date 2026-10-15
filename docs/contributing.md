@@ -1,5 +1,15 @@
 # Contributing to newHOP
 
+## Audience Levels
+
+newHOP is middleware used by third parties to build interactive 3D visualization webpages. In project discussions and documentation:
+
+- **Developer** means the person building the newHOP library and distributable bundles.
+- **Author** means the person using the distributed library to build a visualization application.
+- **User** means a person accessing and interacting with that application.
+
+Use the relevant level when describing a requirement or validating a change. For example, TypeScript API shape is primarily an author concern, bundle generation is a developer concern, and pointer behavior or visible feedback is a user concern.
+
 ## Requirements
 
 - Node.js with npm
