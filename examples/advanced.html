@@ -123,13 +123,13 @@
       buttons: ['home', 'fit', 'zoomIn', 'zoomOut', 'camera']
     });
 
-    presenter.measurement.setOnComplete((result) => {
+    const onMeasurementComplete = (result) => {
       console.log('Measurement: ' + result.distance.toFixed(3));
-    });
+    };
 
-    presenter.picking.setOnPick((result) => {
+    const onPick = (result) => {
       console.log('Picked point:', result.point.toArray());
-    });
+    };
 
     presenter.setScene({
       world: {
@@ -347,13 +347,22 @@
 
     presenter.onSceneReady(buildAppearancePanel);
 
-    presenter.setPickingMode(true);
-    presenter.setMeasurementMode(false);
+    presenter.setInteractionMode('pickpoint', { handlers: { onPick } });
     presenter.setClipPlane('z', 0.0, false);
 
     window.addEventListener('keydown', (event) => {
-      if (event.key === 'm') presenter.setMeasurementMode(!presenter.measurement.isEnabled());
-      if (event.key === 'p') presenter.setPickingMode(!presenter.picking.isEnabled());
+      if (event.key === 'm') {
+        presenter.setInteractionMode(
+          presenter.getInteractionMode() === 'distance' ? 'none' : 'distance',
+          { handlers: { onComplete: onMeasurementComplete } }
+        );
+      }
+      if (event.key === 'p') {
+        presenter.setInteractionMode(
+          presenter.getInteractionMode() === 'pickpoint' ? 'none' : 'pickpoint',
+          { handlers: { onPick } }
+        );
+      }
       if (event.key === 'c') presenter.clipping.toggle();
       if (event.key === 'f') presenter.fitToScene();
     });

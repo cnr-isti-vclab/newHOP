@@ -15,7 +15,7 @@ This is a working plan, not a promise of release dates. Keep entries small enoug
 - Static HTML documentation covers navigation, objects, and spots.
 - Static HTML documentation includes an Interaction reference covering tool ownership and the intended picking and click contracts.
 - The basic Toolbar includes an optional `pickpoint` control with an attached object ID and coordinate readout.
-- Picking mode includes configurable default point feedback through `setPickingMode(enabled, options?)`.
+- Auxiliary interaction modes include configurable pickpoint feedback through `setInteractionMode(mode, options?)`.
 
 ## Next Priorities
 
@@ -44,7 +44,7 @@ This is a working plan, not a promise of release dates. Keep entries small enoug
 ### Tools and UI
 
 - Add examples for compass and minimap observers using `onNavigationChange`.
-- Complete the object-only, drag-qualified generic picking contract described in `docs/interaction.html`, including managed entity identity and pointer input metadata.
+- Add focused browser coverage for the object-only, drag-qualified generic picking contract described in `docs/interaction.html`.
 - Improve Toolbar customization and accessibility.
 
 ### Quality and Collaboration

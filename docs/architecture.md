@@ -11,13 +11,14 @@ Presenter
   |-- SpotManager (EntityManager)
   |-- PickingManager
   |-- MeasurementManager
+  |-- InteractionManager
   |-- ClippingManager
   |-- LightingManager
   |-- Toolbar (optional)
   |-- scene / camera / renderer
 ```
 
-The Presenter owns the scene lifecycle and coordinates managers. Managers own focused behavior and should not reach into unrelated managers. Picking owns an optional single-point feedback overlay attached to a dedicated Presenter overlay root, keeping it out of scene raycasts and helper resets; `setPickingMode(enabled, options?)` controls its visibility, CSS-pixel size, solid color, opacity, depth testing, and camera-relative depth offset. The default offset is measured in screen pixels, so it remains suitable for scenes authored in either millimeters or meters. The marker remains hidden until a successful pick and is cleared when picking is disabled. UI components such as `Toolbar` are optional API clients: they are distributed separately from the Presenter class, and applications may replace them with custom controls that call the same public methods. The package version is exported as `VERSION` and logged to the browser console whenever a Presenter is constructed.
+The Presenter owns the scene lifecycle and coordinates managers. Managers own focused behavior and should not reach into unrelated managers. `InteractionManager` owns the single auxiliary interaction mode (`none`, `pickpoint`, or `distance`) and routes click-qualified pointer events to only the active tool; navigation remains independent and always active. Picking owns an optional single-point feedback overlay attached to a dedicated Presenter overlay root, keeping it out of scene raycasts and helper resets. Applications activate tools with `setInteractionMode(mode, options?)`; each mode closes and cleans the previous mode before initialization. UI components such as `Toolbar` are optional API clients: they are distributed separately from the Presenter class, and applications may replace them with custom controls that call the same public methods. The package version is exported as `VERSION` and logged to the browser console whenever a Presenter is constructed.
 
 The renderer enables antialiasing and shadow maps by default. Pass `shadows: false` to the `Presenter` constructor to disable shadow rendering for lightweight scenes. Runtime meshes cast and receive shadows automatically; individual scene lights opt into shadow casting with `castShadow: true`. The Presenter owns spot click semantics: it resolves hotspot entities through the shared picking raycaster and dispatches only completed primary-button clicks, keeping navigation drags from activating spots. Applications can use the compatibility `onSpotClicked` callback or the `spotclick` subscription event. The public interaction responsibilities and pointer ownership are summarized in [`docs/interaction.html`](interaction.html); generic object picking is being separated from the scene-wide raycast used by spot clicks and double-click recentering.
 
@@ -50,7 +51,7 @@ Scene-authored object, spot, and helper rotations use Euler angles in degrees, o
 
 Entities may also provide a column-major 4x4 `matrix`, matching `THREE.Matrix4.toArray()`. When present, it overrides `position`, `rotation`, and `scale`. Loaded OBJ, PLY, and Nexus entities render double-sided by default; `doubleSided: false` selects front-face rendering, and the block-specific appearance APIs change the setting at runtime: `presenter.setObjectAppearance(id, { doubleSided: enabled })` or `presenter.setSpotAppearance(id, { doubleSided: enabled })`. Default Standard materials for Nexus, PLY, STL, and geometry use `roughness: 0.55` and `metalness: 0` so directional lights produce moderate highlights. GLB/GLTF materials retain their embedded glTF material settings.
 
-The optional `world.sceneTransform` applies one additional transform to all authored entities in the content root. It affects rendered positions, scene bounds, picking, and measurements, but does not transform the camera, base grid, axes helper, or explicit world-space section planes. This makes it possible to align buildings to true north or a street grid while keeping the navigation reference stable. World camera projection supports perspective or orthographic mode; navigation remains projection-independent and preserves the shared target and viewing direction when switching modes. Turntable navigation also accepts one-finger orbit, two-finger pan, and pinch zoom on touch devices; two-finger twist remains reserved for a future sphere-trackball mode.
+The optional `world.sceneTransform` applies one additional transform to all authored entities in the content root. It affects rendered positions, scene bounds, picking, and measurements, but does not transform the camera, base grid, axes helper, or explicit world-space section planes. This makes it possible to align buildings to true north or a street grid while keeping the navigation reference stable. World camera projection supports perspective or orthographic mode; navigation remains projection-independent and preserves the shared target and viewing direction when switching modes. Turntable navigation also accepts one-finger orbit, two-finger pan, and pinch zoom on touch devices; two-finger twist is ignored.
 
 ```ts
 world: {
@@ -72,7 +73,7 @@ Current block contents can be enumerated without merging namespaces: `presenter.
 
 ## Navigation
 
-`Trackball` is the shared navigation façade. `turntable` provides constrained two-axis orbit, while `sphere` provides full-sphere arcball rotation. Both modes share pan, zoom, fitting, projection switching, touch input, viewpoint animation, and observers. Runtime mode switching preserves the camera pose when entering sphere mode. Returning to turntable preserves target, distance, and direction while canonicalizing roll to the configured up axis. Navigation can also expose an optional non-pickable, depth-tested `trackball` overlay centered on the live target; the overlay is kept separate from scene helpers and does not affect bounds, clipping, measurement, or picking. Navigation supports `upAxis: 'y' | 'z'`, defaulting to Y-up. The selected axis controls camera orbit semantics, camera up orientation, and base-grid orientation; it does not convert mesh, picking, or measurement coordinates.
+`Trackball` is the shared navigation façade. `turntable` provides constrained two-axis orbit, while `sphere` provides full-sphere arcball rotation. Both modes share pan, zoom, fitting, projection switching, touch input, viewpoint animation, and observers. Runtime mode switching preserves the camera pose when entering sphere mode. Returning to turntable preserves target, distance, and direction while canonicalizing roll to the configured up axis. Navigation can also expose an optional non-pickable, depth-tested `trackball` overlay centered on the live target; the overlay is kept separate from scene helpers and does not affect bounds, clipping, measurement, or picking. Navigation supports `upAxis: 'y' | 'z'`, defaulting to Y-up. The selected axis controls camera orbit semantics, camera up orientation, and base-grid orientation; it does not convert mesh, picking, or measurement coordinates. Two-finger twist is currently ignored in both navigation modes.
 
 The canonical turntable viewpoint is:
 
@@ -101,9 +102,9 @@ trackball.setSpeed(speed);
 
 `reset()` returns to `homeView`. `jumpToViewpoint()` and `animateToViewpoint()` move to arbitrary viewpoints. `onChange()` provides synchronized status updates to compass, minimap, and other observers.
 
-In the turntable input model, left-button dragging rotates, while Shift + left-button, middle-button, and right-button dragging pan. A stationary right-button click leaves the browser context menu available; the menu is suppressed only after a right-button drag. The mouse wheel controls zoom.
+In the turntable input model, left-button dragging rotates, while Shift + left-button, middle-button, and right-button dragging pan. A stationary right-button click leaves the browser context menu available; the menu is suppressed only after a right-button drag. The mouse wheel controls zoom. Touch uses one-finger orbit, two-finger pan, and pinch zoom; twist is ignored.
 
-The default elevation range is `[-70, 70]`. Elevation limits may include the exact poles `-90` and `90`; at a pole, azimuth still determines camera roll and therefore the camera's up vector, even though it no longer changes the camera position.
+The default elevation range is `[-90, 90]`. Elevation limits may include the exact poles `-90` and `90`; at a pole, azimuth still determines camera roll and therefore the camera's up vector, even though it no longer changes the camera position.
 
 ## Scene Loading
 

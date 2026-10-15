@@ -7,6 +7,7 @@ export type { ModelLoaderConfig } from './loaders/ModelLoader';
 export { EntityManager } from './managers/EntityManager';
 export { MeasurementManager } from './managers/MeasurementManager';
 export { PickingManager } from './managers/PickingManager';
+export { InteractionManager } from './managers/InteractionManager';
 export { ClippingManager } from './managers/ClippingManager';
 export { LightingManager } from './managers/LightingManager';
 export type { FlashlightOrientation } from './managers/LightingManager';
@@ -26,6 +27,7 @@ export type { CameraViewpoint, FitOptions, Matrix3Tuple, MatrixViewpoint, Sphere
 export { Toolbar } from './ui/Toolbar';
 export type { ToolbarButtonId, ToolbarConfig, ToolbarCustomButton, ToolbarIcon, ToolbarItem, ToolbarItemId, ToolbarPosition } from './ui/Toolbar';
 export type { PickListener, PickMarkerOptions, PickResult, PickingOptions } from './managers/PickingManager';
+export type { DistanceInteractionOptions, InteractionMode, InteractionModeListener, InteractionOptions, PickpointInteractionOptions } from './managers/InteractionManager';
 export type {
   EntityDefinition,
   CameraProjection,

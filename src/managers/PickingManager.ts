@@ -30,7 +30,7 @@ export class PickingManager {
   private readonly marker: THREE.Points;
   private enabled = false;
   private markerVisible = true;
-  private markerSize = 5;
+  private markerSize = 9;
   private markerDepthOffset = 0.5;
   private markerPositioned = false;
   private pendingPointer?: { id: number; x: number; y: number };
@@ -45,7 +45,7 @@ export class PickingManager {
     this.marker = new THREE.Points(
       new THREE.BufferGeometry().setFromPoints([new THREE.Vector3()]),
       new THREE.PointsMaterial({
-        color: 0xff5533,
+        color: 0xff69b4,
         size: this.markerSize,
         sizeAttenuation: false,
         depthTest: true,

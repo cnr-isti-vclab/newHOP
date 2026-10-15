@@ -58,6 +58,10 @@ export class Toolbar {
   private readonly buttonEls = new Map<string, HTMLButtonElement>();
   private readonly pickpointPanel?: HTMLDivElement;
   private readonly unsubscribePickpoint?: () => void;
+  private readonly measurementPanel?: HTMLDivElement;
+  private readonly unsubscribeMeasurement?: () => void;
+  private readonly unsubscribeInteraction?: () => void;
+  private measurementHasResult = false;
 
   constructor(private readonly presenter: Presenter, config: ToolbarConfig = {}) {
     injectStyles();
@@ -65,6 +69,7 @@ export class Toolbar {
     anchorContainer(mount);
 
     this.specs = this.createSpecs(config.buttons ?? DEFAULT_BUTTONS, config.onCustomButton);
+    this.unsubscribeInteraction = this.presenter.interaction.onModeChange(() => this.refresh());
 
     this.element = document.createElement('div');
     this.element.className = `newhop-toolbar newhop-toolbar--${config.position ?? 'bottom-center'}`;
@@ -86,6 +91,7 @@ export class Toolbar {
       button.setAttribute('aria-label', spec.label);
       appendIcon(button, spec.icon);
       button.addEventListener('click', (event) => {
+        if (spec.id === 'measure' && this.presenter.getInteractionMode() !== 'distance') this.measurementHasResult = false;
         spec.onClick(event);
         this.refresh();
       });
@@ -98,6 +104,16 @@ export class Toolbar {
         this.unsubscribePickpoint = this.presenter.picking.onPickResult((result) => {
           if (!this.presenter.picking.isEnabled()) return;
           updatePickpointPanel(panel, result);
+        });
+      }
+      if (spec.id === 'measure') {
+        const panel = createMeasurementPanel();
+        this.measurementPanel = panel;
+        this.element.appendChild(panel);
+        this.unsubscribeMeasurement = this.presenter.measurement.onCompleteResult((result) => {
+          this.measurementHasResult = true;
+          updateMeasurementPanel(panel, result.distance);
+          this.refresh();
         });
       }
     }
@@ -118,14 +134,22 @@ export class Toolbar {
       button.classList.toggle('newhop-toolbar__button--active', spec.toggle && spec.isActive());
     }
     if (this.pickpointPanel) {
-      const active = this.presenter.picking.isEnabled();
+      const active = this.presenter.getInteractionMode() === 'pickpoint';
       this.pickpointPanel.hidden = !active;
       this.element.classList.toggle('newhop-toolbar--pickpoint-active', active);
+    }
+    if (this.measurementPanel) {
+      const active = this.presenter.getInteractionMode() === 'distance';
+      this.measurementPanel.hidden = !active;
+      if (active && !this.measurementHasResult) updateMeasurementPanel(this.measurementPanel, undefined);
+      this.element.classList.toggle('newhop-toolbar--measurement-active', active);
     }
   }
 
   dispose(): void {
     this.unsubscribePickpoint?.();
+    this.unsubscribeMeasurement?.();
+    this.unsubscribeInteraction?.();
     this.element.remove();
   }
 
@@ -169,8 +193,11 @@ export class Toolbar {
           label: 'Measure distance',
           icon: '📏',
           toggle: true,
-          onClick: () => presenter.setMeasurementMode(!presenter.measurement.isEnabled()),
-          isActive: () => presenter.measurement.isEnabled()
+          onClick: () => {
+            if (presenter.getInteractionMode() === 'distance') presenter.setInteractionMode('none');
+            else presenter.setInteractionMode('distance');
+          },
+          isActive: () => presenter.getInteractionMode() === 'distance'
         };
       case 'pickpoint':
         return {
@@ -180,8 +207,11 @@ export class Toolbar {
           label: 'Pick point',
           icon: '⌖',
           toggle: true,
-          onClick: () => presenter.setPickingMode(!presenter.picking.isEnabled()),
-          isActive: () => presenter.picking.isEnabled()
+          onClick: () => {
+            if (presenter.getInteractionMode() === 'pickpoint') presenter.setInteractionMode('none');
+            else presenter.setInteractionMode('pickpoint');
+          },
+          isActive: () => presenter.getInteractionMode() === 'pickpoint'
         };
       case 'section':
         return {
@@ -341,6 +371,19 @@ function createPickpointPanel(): HTMLDivElement {
   panel.hidden = true;
   panel.innerHTML = '<div class="newhop-toolbar__pickpoint-label">Object</div><div class="newhop-toolbar__pickpoint-value" data-pickpoint-object>Click an object</div><div class="newhop-toolbar__pickpoint-label">Point</div><div class="newhop-toolbar__pickpoint-value" data-pickpoint-point>[-, -, -]</div>';
   return panel;
+}
+
+function createMeasurementPanel(): HTMLDivElement {
+  const panel = document.createElement('div');
+  panel.className = 'newhop-toolbar__pickpoint-panel';
+  panel.hidden = true;
+  panel.innerHTML = '<div class="newhop-toolbar__pickpoint-label">Distance</div><div class="newhop-toolbar__pickpoint-value" data-measurement-distance>Click two points</div>';
+  return panel;
+}
+
+function updateMeasurementPanel(panel: HTMLDivElement, distance: number | undefined): void {
+  const distanceLabel = panel.querySelector<HTMLElement>('[data-measurement-distance]');
+  if (distanceLabel) distanceLabel.textContent = distance === undefined ? 'Click two points' : `${formatCoordinate(distance)} units`;
 }
 
 function updatePickpointPanel(panel: HTMLDivElement, result: { point: { x: number; y: number; z: number }; object: THREE.Object3D }): void {

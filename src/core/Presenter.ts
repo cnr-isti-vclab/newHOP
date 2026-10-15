@@ -6,10 +6,13 @@ import { ModelLoader } from '../loaders/ModelLoader';
 import { Trackball, type TrackballChangeListener, type TrackballMode, type TrackballStatus, type ViewDirection, type Viewpoint } from '../controls/Trackball';
 import { TrackballGizmo } from '../controls/TrackballGizmo';
 import { MeasurementManager } from '../managers/MeasurementManager';
-import { PickingManager, type PickingOptions } from '../managers/PickingManager';
+import { PickingManager } from '../managers/PickingManager';
+import { InteractionManager, type InteractionMode, type InteractionOptions, type PickpointInteractionOptions, type DistanceInteractionOptions } from '../managers/InteractionManager';
 import { ClippingManager } from '../managers/ClippingManager';
 import { LightingManager, type SceneLightingDescription } from '../managers/LightingManager';
 import { VERSION } from '../version';
+
+export type { DistanceInteractionOptions, InteractionMode, InteractionOptions, PickpointInteractionOptions } from '../managers/InteractionManager';
 
 export interface PresenterConfig {
   mount: HTMLElement | string;
@@ -39,6 +42,7 @@ export class Presenter {
   readonly trackballGizmo: TrackballGizmo;
   readonly measurement: MeasurementManager;
   readonly picking: PickingManager;
+  readonly interaction: InteractionManager;
   readonly clipping: ClippingManager;
   readonly lighting: LightingManager;
   private sceneBounds = new THREE.Box3();
@@ -95,6 +99,7 @@ export class Presenter {
     this.trackballGizmo = new TrackballGizmo(this.camera);
     this.measurement = new MeasurementManager(this.root, this.camera, this.renderer.domElement);
     this.picking = new PickingManager(this.root, this.camera, this.renderer.domElement, this.pickingOverlayRoot);
+    this.interaction = new InteractionManager(this.picking, this.measurement);
     this.clipping = new ClippingManager(this.root);
     this.lighting = new LightingManager(this.scene, this.camera, () => this.trackball.getUpAxis());
     this.scene.add(this.root);
@@ -564,12 +569,17 @@ export class Presenter {
     return this.getUnambiguousEntityManager(id).getObject(id);
   }
 
-  setMeasurementMode(enabled: boolean): void {
-    this.measurement.setEnabled(enabled);
+  setInteractionMode(mode: 'none'): void;
+  setInteractionMode(mode: 'pickpoint', options?: PickpointInteractionOptions): void;
+  setInteractionMode(mode: 'distance', options?: DistanceInteractionOptions): void;
+  setInteractionMode(mode: InteractionMode, options?: InteractionOptions): void {
+    if (mode === 'none') this.interaction.setMode('none');
+    else if (mode === 'pickpoint') this.interaction.setMode('pickpoint', options as PickpointInteractionOptions | undefined);
+    else this.interaction.setMode('distance', options as DistanceInteractionOptions | undefined);
   }
 
-  setPickingMode(enabled: boolean, options?: PickingOptions): void {
-    this.picking.setEnabled(enabled, options);
+  getInteractionMode(): InteractionMode {
+    return this.interaction.getMode();
   }
 
   setFlashlightMode(enabled: boolean): void {
@@ -591,6 +601,7 @@ export class Presenter {
     this.stop();
     this.trackball.dispose();
     this.trackballGizmo.dispose();
+    this.interaction.dispose();
     this.renderer.domElement.removeEventListener('pointerdown', this.onPointerDown);
     this.renderer.domElement.removeEventListener('pointermove', this.onPointerMove);
     this.renderer.domElement.removeEventListener('pointerup', this.onPointerUp);
@@ -641,8 +652,7 @@ export class Presenter {
       this.renderer.domElement.setPointerCapture(event.pointerId);
       return;
     }
-    this.measurement.handlePointerDown(event);
-    this.picking.handlePointerDown(event);
+    this.interaction.handlePointerDown(event);
     if (event.button === 0 && event.isPrimary) {
       this.spotClickPointerId = event.pointerId;
       this.spotClickStartX = event.clientX;
@@ -652,7 +662,7 @@ export class Presenter {
   };
 
   private readonly onPointerMove = (event: PointerEvent): void => {
-    this.picking.handlePointerMove(event);
+    this.interaction.handlePointerMove(event);
     if (event.pointerId === this.spotClickPointerId) {
       const dx = event.clientX - this.spotClickStartX;
       const dy = event.clientY - this.spotClickStartY;
@@ -672,7 +682,7 @@ export class Presenter {
   };
 
   private readonly onPointerUp = (event: PointerEvent): void => {
-    this.picking.handlePointerUp(event);
+    this.interaction.handlePointerUp(event);
     if (event.pointerId === this.flashlightPointerId) this.flashlightPointerId = -1;
     if (event.pointerId !== this.spotClickPointerId) return;
     const shouldClick = !this.spotClickMoved;
@@ -681,7 +691,7 @@ export class Presenter {
   };
 
   private readonly onPointerCancel = (event: PointerEvent): void => {
-    this.picking.handlePointerCancel(event);
+    this.interaction.handlePointerCancel(event);
     if (event.pointerId === this.flashlightPointerId) this.flashlightPointerId = -1;
     if (event.pointerId === this.spotClickPointerId) this.resetSpotClick();
   };

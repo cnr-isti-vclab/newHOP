@@ -14,6 +14,8 @@ export interface MeasurementResult {
   line: THREE.Line;
 }
 
+export type MeasurementListener = (result: MeasurementResult) => void;
+
 export class MeasurementManager {
   private readonly root: THREE.Object3D;
   private camera: THREE.Camera;
@@ -22,7 +24,10 @@ export class MeasurementManager {
   private readonly points: MeasurementHit[] = [];
   private readonly visualGroup = new THREE.Group();
   private enabled = false;
+  private hasCompletedMeasurement = false;
+  private pendingPointer?: { id: number; x: number; y: number };
   private onComplete?: (result: MeasurementResult) => void;
+  private readonly listeners = new Set<MeasurementListener>();
 
   constructor(root: THREE.Object3D, camera: THREE.Camera, element: HTMLElement) {
     this.root = root;
@@ -50,6 +55,11 @@ export class MeasurementManager {
     this.onComplete = callback;
   }
 
+  onCompleteResult(listener: MeasurementListener): () => void {
+    this.listeners.add(listener);
+    return () => this.listeners.delete(listener);
+  }
+
   activate(): void {
     this.enabled = true;
     this.reset();
@@ -63,14 +73,30 @@ export class MeasurementManager {
   reset(): void {
     this.visualGroup.clear();
     this.points.length = 0;
+    this.hasCompletedMeasurement = false;
+    this.pendingPointer = undefined;
   }
 
   handlePointerDown(event: PointerEvent): void {
-    if (!this.enabled) return;
+    if (!this.enabled || event.button !== 0 || !event.isPrimary) return;
+    this.pendingPointer = { id: event.pointerId, x: event.clientX, y: event.clientY };
+  }
+
+  handlePointerMove(event: PointerEvent): void {
+    if (!this.pendingPointer || event.pointerId !== this.pendingPointer.id) return;
+    const deltaX = event.clientX - this.pendingPointer.x;
+    const deltaY = event.clientY - this.pendingPointer.y;
+    if (deltaX * deltaX + deltaY * deltaY > 25) this.pendingPointer = undefined;
+  }
+
+  handlePointerUp(event: PointerEvent): void {
+    if (!this.pendingPointer || event.pointerId !== this.pendingPointer.id) return;
+    this.pendingPointer = undefined;
     const hit = this.pickFromPointer(event.clientX, event.clientY);
     if (!hit) return;
+    if (this.hasCompletedMeasurement) this.reset();
     this.points.push(hit);
-    this.createMarker(hit.point, this.points.length === 1 ? 0xffcc00 : 0x00aaff);
+    this.createMarker(hit.point, 0x00ff00);
     if (this.points.length >= 2) {
       const start = this.points[0];
       const end = this.points[1];
@@ -78,14 +104,31 @@ export class MeasurementManager {
       const midpoint = start.point.clone().add(end.point).multiplyScalar(0.5);
       const line = new THREE.Line(
         new THREE.BufferGeometry().setFromPoints([start.point, end.point]),
-        new THREE.LineBasicMaterial({ color: 0xffcc00 })
+        new THREE.LineBasicMaterial({ color: 0x00ff00 })
       );
       this.visualGroup.add(line);
+      const hiddenLine = new THREE.Line(
+        line.geometry,
+        new THREE.LineBasicMaterial({
+          color: 0x00ff00,
+          transparent: true,
+          opacity: 0.35,
+          depthFunc: THREE.GreaterDepth,
+          depthWrite: false
+        })
+      );
+      hiddenLine.renderOrder = 1;
+      this.visualGroup.add(hiddenLine);
       const result: MeasurementResult = { start, end, distance, midpoint, line };
       this.onComplete?.(result);
-      this.enabled = false;
+      for (const listener of this.listeners) listener(result);
       this.points.length = 0;
+      this.hasCompletedMeasurement = true;
     }
+  }
+
+  handlePointerCancel(event: PointerEvent): void {
+    if (this.pendingPointer?.id === event.pointerId) this.pendingPointer = undefined;
   }
 
   pickFromPointer(clientX: number, clientY: number): MeasurementHit | undefined {
@@ -94,7 +137,7 @@ export class MeasurementManager {
     const normalizedY = -((clientY - rect.top) / rect.height) * 2 + 1;
     this.raycaster.setFromCamera(new THREE.Vector2(normalizedX, normalizedY), this.camera);
     const hits = this.raycaster.intersectObjects(this.root.children, true);
-    const hit = hits.find((entry) => entry.object !== this.visualGroup);
+    const hit = hits.find((entry) => !this.isVisualObject(entry.object));
     if (!hit) return undefined;
     const point = hit.point.clone();
     const normal = hit.face?.normal ? hit.face.normal.clone().transformDirection(hit.object.matrixWorld) : new THREE.Vector3(0, 1, 0);
@@ -102,11 +145,47 @@ export class MeasurementManager {
   }
 
   private createMarker(position: THREE.Vector3, color: number): void {
-    const marker = new THREE.Mesh(
-      new THREE.SphereGeometry(0.02, 12, 12),
-      new THREE.MeshBasicMaterial({ color })
+    const markerPosition = position.clone();
+    const towardCamera = this.camera.position.clone().sub(position).normalize();
+    const height = Math.max(this.element.clientHeight, 1);
+    let worldUnitsPerPixel: number;
+    if (this.camera instanceof THREE.OrthographicCamera) {
+      worldUnitsPerPixel = (this.camera.top - this.camera.bottom) / this.camera.zoom / height;
+    } else if (this.camera instanceof THREE.PerspectiveCamera) {
+      const distance = position.distanceTo(this.camera.position);
+      worldUnitsPerPixel = 2 * distance * Math.tan(THREE.MathUtils.degToRad(this.camera.fov) / 2) / height;
+    } else {
+      worldUnitsPerPixel = 0;
+    }
+    markerPosition.addScaledVector(towardCamera, worldUnitsPerPixel * 0.5);
+    const marker = new THREE.Points(
+      new THREE.BufferGeometry().setFromPoints([markerPosition]),
+      new THREE.PointsMaterial({
+        color,
+        size: 9,
+        sizeAttenuation: false,
+        depthTest: true,
+        depthWrite: false
+      })
     );
-    marker.position.copy(position);
+    marker.frustumCulled = false;
+    marker.renderOrder = 1000;
     this.visualGroup.add(marker);
+  }
+
+  private isVisualObject(object: THREE.Object3D): boolean {
+    let current: THREE.Object3D | null = object;
+    while (current) {
+      if (current === this.visualGroup) return true;
+      current = current.parent;
+    }
+    return false;
+  }
+
+  dispose(): void {
+    this.reset();
+    this.listeners.clear();
+    this.onComplete = undefined;
+    this.root.remove(this.visualGroup);
   }
 }

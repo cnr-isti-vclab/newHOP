@@ -70,10 +70,11 @@
     const presenter = new Presenter({ mount: 'viewer' });
     new Toolbar(presenter, { position: 'bottom-center' });
 
-    presenter.picking.setOnPick((result) => {
-      console.log('Picked point:', result.point.toArray());
+    presenter.setInteractionMode('pickpoint', {
+      handlers: {
+        onPick: (result) => console.log('Picked point:', result.point.toArray())
+      }
     });
-    presenter.setPickingMode(true);
 
     document.querySelectorAll('[data-light]').forEach((input) => {
       input.addEventListener('change', (event) => {
