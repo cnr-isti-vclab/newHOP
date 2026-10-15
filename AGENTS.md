@@ -8,6 +8,12 @@
 - Record durable architectural decisions in a new numbered file under `docs/decisions/` rather than leaving them only in chat or code comments.
 - Keep documentation changes in the same change as the implementation they describe.
 
+## Pre-1.0 Policy
+
+- Before the official 1.0 release, current requirements and architecture take priority over old 3DHOP compatibility expectations and provisional prior decisions.
+- Earlier decisions may be revised or superseded when implementation experience or current requirements justify it.
+- Intentional breaking changes must update the public API, documentation, examples, architectural decision records, and validation in the same change.
+
 ## Validation
 
 - Run `npm run typecheck` after TypeScript changes.
