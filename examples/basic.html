@@ -24,12 +24,6 @@
       console.log('Measurement:', result.distance.toFixed(3), 'units');
     });
 
-    presenter.setInteractionMode('pickpoint', {
-      handlers: {
-        onPick: (result) => console.log('Picked point:', result.point.toArray())
-      }
-    });
-
     presenter.setScene({
       world: {
         background: {

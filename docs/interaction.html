@@ -49,6 +49,7 @@
     onPick: (result) =&gt; console.log('Point:', result.point.toArray())
   }
 });</code></pre>
+  <p>The author-configurable pickpoint defaults are exported as <code>PICKING_DEFAULTS</code>. They contain the marker visibility, size, color, opacity, depth-testing, and camera-facing depth-offset values. Pass partial <code>marker</code> values to override them for an activation; the click threshold and renderer-specific marker constants are internal.</p>
     <p>The generic-picking contract is intentionally object-only. It resolves a hit on imported child geometry back to its owning managed object, so application code can identify the newHOP object rather than depending on an incidental child Three.js node. Spots use their separate click API, and helpers never produce generic pick results.</p>
     <p>Pointer down records the candidate interaction. The pick is resolved on pointer release only when movement remains within the click threshold. Pointer movement beyond 5 CSS pixels cancels the pending pick, and pointer cancellation discards it. This keeps orbit, pan, and other navigation gestures from invoking the pick handler.</p>
     <p>The pick result exposes the world-space <code>point</code>, an intersection <code>normal</code>, and the low-level hit <code>object</code>. The exact TypeScript shape follows the <code>PickResult</code> interface; managed-object identity can be resolved from the returned object when an application needs it.</p>
@@ -73,6 +74,7 @@ presenter.on('spotclick', (event) =&gt; {
 
     <h2>Measurement and clipping</h2>
     <p>Distance measurement is activated with <code>presenter.setInteractionMode('distance', options)</code>. Its completion handler receives the completed measurement. Only one auxiliary interaction mode is active at a time: activating distance closes pickpoint, and activating pickpoint closes distance. Navigation remains active alongside either tool.</p>
+    <p>The author-configurable distance defaults are exported as <code>MEASUREMENT_DEFAULTS</code>. Pass partial <code>marker</code> and <code>line</code> values together with the completion handler to configure measurement feedback. Click qualification, depth writes, render orders, and hidden-line behavior remain internal.</p>
     <p>Clipping is configured with <code>presenter.setClipPlane(axis, offset, enabled)</code>. The clipping manager owns section-plane state; it does not change which objects are eligible for generic picking.</p>
 
     <h2>Related references</h2>

@@ -107,7 +107,6 @@
       <div>Multiple models + transforms + built-in toolbar</div>
     </div>
     <aside class="appearance-panel" id="appearance-panel">
-      <h2>Model appearance</h2>
       <p>Toggle reversible material modifiers for each model.</p>
       <div>Loading models...</div>
     </aside>
@@ -347,7 +346,6 @@
 
     presenter.onSceneReady(buildAppearancePanel);
 
-    presenter.setInteractionMode('pickpoint', { handlers: { onPick } });
     presenter.setClipPlane('z', 0.0, false);
 
     window.addEventListener('keydown', (event) => {

@@ -1,4 +1,4 @@
-import type { MeasurementListener, MeasurementManager } from './MeasurementManager';
+import type { MeasurementListener, MeasurementManager, MeasurementOptions } from './MeasurementManager';
 import type { PickListener, PickingManager, PickingOptions } from './PickingManager';
 
 export type InteractionMode = 'none' | 'pickpoint' | 'distance';
@@ -9,7 +9,7 @@ export interface PickpointInteractionOptions extends PickingOptions {
   };
 }
 
-export interface DistanceInteractionOptions {
+export interface DistanceInteractionOptions extends MeasurementOptions {
   handlers?: {
     onComplete?: MeasurementListener;
   };
@@ -53,7 +53,7 @@ export class InteractionManager {
     } else {
       const distanceOptions = options as DistanceInteractionOptions | undefined;
       this.measurement.setOnComplete(distanceOptions?.handlers?.onComplete);
-      this.measurement.setEnabled(true);
+      this.measurement.setEnabled(true, distanceOptions);
     }
     this.mode = mode;
     this.emitModeChange();

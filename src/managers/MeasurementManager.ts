@@ -16,6 +16,60 @@ export interface MeasurementResult {
 
 export type MeasurementListener = (result: MeasurementResult) => void;
 
+export interface MeasurementMarkerOptions {
+  visible?: boolean;
+  color?: THREE.ColorRepresentation;
+  size?: number;
+  opacity?: number;
+  depthTest?: boolean;
+  depthOffset?: number;
+}
+
+export interface MeasurementLineOptions {
+  visible?: boolean;
+  color?: THREE.ColorRepresentation;
+  opacity?: number;
+  depthTest?: boolean;
+}
+
+export interface MeasurementOptions {
+  marker?: MeasurementMarkerOptions;
+  line?: MeasurementLineOptions;
+}
+
+export interface MeasurementDefaults {
+  marker: Required<MeasurementMarkerOptions>;
+  line: Required<MeasurementLineOptions>;
+}
+
+export const MEASUREMENT_DEFAULTS = {
+  marker: {
+    visible: true,
+    color: 0x00ff00,
+    size: 9,
+    opacity: 1,
+    depthTest: true,
+    depthOffset: 0.5
+  },
+  line: {
+    visible: true,
+    color: 0x00ff00,
+    opacity: 1,
+    depthTest: true
+  }
+} as const satisfies MeasurementDefaults;
+
+const MEASUREMENT_CLICK_THRESHOLD = 5;
+const MEASUREMENT_MARKER_SIZE_ATTENUATION = false;
+const MEASUREMENT_MARKER_DEPTH_WRITE = false;
+const MEASUREMENT_MARKER_RENDER_ORDER = 1000;
+const MEASUREMENT_LINE_DEPTH_WRITE = true;
+const MEASUREMENT_LINE_RENDER_ORDER = 0;
+const MEASUREMENT_HIDDEN_LINE_OPACITY = 0.35;
+const MEASUREMENT_HIDDEN_LINE_DEPTH_FUNC = THREE.GreaterDepth;
+const MEASUREMENT_HIDDEN_LINE_DEPTH_WRITE = false;
+const MEASUREMENT_HIDDEN_LINE_RENDER_ORDER = 1;
+
 export class MeasurementManager {
   private readonly root: THREE.Object3D;
   private camera: THREE.Camera;
@@ -24,6 +78,16 @@ export class MeasurementManager {
   private readonly points: MeasurementHit[] = [];
   private readonly visualGroup = new THREE.Group();
   private enabled = false;
+  private markerVisible: boolean = MEASUREMENT_DEFAULTS.marker.visible;
+  private markerColor: THREE.ColorRepresentation = MEASUREMENT_DEFAULTS.marker.color;
+  private markerSize: number = MEASUREMENT_DEFAULTS.marker.size;
+  private markerOpacity: number = MEASUREMENT_DEFAULTS.marker.opacity;
+  private markerDepthTest: boolean = MEASUREMENT_DEFAULTS.marker.depthTest;
+  private markerDepthOffset: number = MEASUREMENT_DEFAULTS.marker.depthOffset;
+  private lineVisible: boolean = MEASUREMENT_DEFAULTS.line.visible;
+  private lineColor: THREE.ColorRepresentation = MEASUREMENT_DEFAULTS.line.color;
+  private lineOpacity: number = MEASUREMENT_DEFAULTS.line.opacity;
+  private lineDepthTest: boolean = MEASUREMENT_DEFAULTS.line.depthTest;
   private hasCompletedMeasurement = false;
   private pendingPointer?: { id: number; x: number; y: number };
   private onComplete?: (result: MeasurementResult) => void;
@@ -40,7 +104,21 @@ export class MeasurementManager {
     this.camera = camera;
   }
 
-  setEnabled(enabled: boolean): void {
+  setEnabled(enabled: boolean, options?: MeasurementOptions): void {
+    if (options?.marker) {
+      this.markerVisible = options.marker.visible ?? this.markerVisible;
+      this.markerColor = options.marker.color ?? this.markerColor;
+      this.markerSize = Math.max(1, options.marker.size ?? this.markerSize);
+      this.markerOpacity = THREE.MathUtils.clamp(options.marker.opacity ?? this.markerOpacity, 0, 1);
+      this.markerDepthTest = options.marker.depthTest ?? this.markerDepthTest;
+      this.markerDepthOffset = Math.max(0, options.marker.depthOffset ?? this.markerDepthOffset);
+    }
+    if (options?.line) {
+      this.lineVisible = options.line.visible ?? this.lineVisible;
+      this.lineColor = options.line.color ?? this.lineColor;
+      this.lineOpacity = THREE.MathUtils.clamp(options.line.opacity ?? this.lineOpacity, 0, 1);
+      this.lineDepthTest = options.line.depthTest ?? this.lineDepthTest;
+    }
     this.enabled = enabled;
     if (!enabled) {
       this.reset();
@@ -86,7 +164,7 @@ export class MeasurementManager {
     if (!this.pendingPointer || event.pointerId !== this.pendingPointer.id) return;
     const deltaX = event.clientX - this.pendingPointer.x;
     const deltaY = event.clientY - this.pendingPointer.y;
-    if (deltaX * deltaX + deltaY * deltaY > 25) this.pendingPointer = undefined;
+    if (deltaX * deltaX + deltaY * deltaY > MEASUREMENT_CLICK_THRESHOLD ** 2) this.pendingPointer = undefined;
   }
 
   handlePointerUp(event: PointerEvent): void {
@@ -96,7 +174,7 @@ export class MeasurementManager {
     if (!hit) return;
     if (this.hasCompletedMeasurement) this.reset();
     this.points.push(hit);
-    this.createMarker(hit.point, 0x00ff00);
+    this.createMarker(hit.point);
     if (this.points.length >= 2) {
       const start = this.points[0];
       const end = this.points[1];
@@ -104,20 +182,30 @@ export class MeasurementManager {
       const midpoint = start.point.clone().add(end.point).multiplyScalar(0.5);
       const line = new THREE.Line(
         new THREE.BufferGeometry().setFromPoints([start.point, end.point]),
-        new THREE.LineBasicMaterial({ color: 0x00ff00 })
+        new THREE.LineBasicMaterial({
+          color: this.lineColor,
+          opacity: this.lineOpacity,
+          transparent: this.lineOpacity < 1,
+          depthTest: this.lineDepthTest,
+          depthWrite: MEASUREMENT_LINE_DEPTH_WRITE
+        })
       );
+      line.visible = this.lineVisible;
+      line.renderOrder = MEASUREMENT_LINE_RENDER_ORDER;
       this.visualGroup.add(line);
       const hiddenLine = new THREE.Line(
         line.geometry,
         new THREE.LineBasicMaterial({
-          color: 0x00ff00,
+          color: this.lineColor,
           transparent: true,
-          opacity: 0.35,
-          depthFunc: THREE.GreaterDepth,
-          depthWrite: false
+          opacity: MEASUREMENT_HIDDEN_LINE_OPACITY,
+          depthTest: this.lineDepthTest,
+          depthFunc: MEASUREMENT_HIDDEN_LINE_DEPTH_FUNC,
+          depthWrite: MEASUREMENT_HIDDEN_LINE_DEPTH_WRITE
         })
       );
-      hiddenLine.renderOrder = 1;
+      hiddenLine.visible = this.lineVisible;
+      hiddenLine.renderOrder = MEASUREMENT_HIDDEN_LINE_RENDER_ORDER;
       this.visualGroup.add(hiddenLine);
       const result: MeasurementResult = { start, end, distance, midpoint, line };
       this.onComplete?.(result);
@@ -144,7 +232,7 @@ export class MeasurementManager {
     return { point, normal, object: hit.object };
   }
 
-  private createMarker(position: THREE.Vector3, color: number): void {
+  private createMarker(position: THREE.Vector3): void {
     const markerPosition = position.clone();
     const towardCamera = this.camera.position.clone().sub(position).normalize();
     const height = Math.max(this.element.clientHeight, 1);
@@ -157,19 +245,22 @@ export class MeasurementManager {
     } else {
       worldUnitsPerPixel = 0;
     }
-    markerPosition.addScaledVector(towardCamera, worldUnitsPerPixel * 0.5);
+    markerPosition.addScaledVector(towardCamera, worldUnitsPerPixel * this.markerDepthOffset);
     const marker = new THREE.Points(
       new THREE.BufferGeometry().setFromPoints([markerPosition]),
       new THREE.PointsMaterial({
-        color,
-        size: 9,
-        sizeAttenuation: false,
-        depthTest: true,
-        depthWrite: false
+        color: this.markerColor,
+        size: this.markerSize,
+        opacity: this.markerOpacity,
+        transparent: this.markerOpacity < 1,
+        sizeAttenuation: MEASUREMENT_MARKER_SIZE_ATTENUATION,
+        depthTest: this.markerDepthTest,
+        depthWrite: MEASUREMENT_MARKER_DEPTH_WRITE
       })
     );
     marker.frustumCulled = false;
-    marker.renderOrder = 1000;
+    marker.renderOrder = MEASUREMENT_MARKER_RENDER_ORDER;
+    marker.visible = this.enabled && this.markerVisible;
     this.visualGroup.add(marker);
   }
 

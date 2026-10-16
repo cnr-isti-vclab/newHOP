@@ -78,12 +78,6 @@
       buttons: ['home', 'fit', 'zoomIn', 'zoomOut', 'measure', 'section', 'fullscreen']
     });
 
-    presenter.setInteractionMode('pickpoint', {
-      handlers: {
-        onPick: (result) => console.log('Picked point:', result.point.toArray())
-      }
-    });
-
     document.querySelectorAll('[data-light]').forEach((input) => {
       input.addEventListener('change', (event) => {
         const checkbox = event.currentTarget;
@@ -147,12 +141,6 @@
             intensity: 2.0,
             position: [500, 900, 700],
             target: [0, 100, 0],
-            castShadow: true
-          },
-          rim: {
-            type: 'point',
-            enabled: false,
-            color: 0x7dd3fc,
             intensity: 250000,
             position: [-500, 450, 350],
             distance: 1800,

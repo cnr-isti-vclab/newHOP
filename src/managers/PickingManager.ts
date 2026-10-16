@@ -19,6 +19,26 @@ export interface PickingOptions {
   marker?: PickMarkerOptions;
 }
 
+export interface PickingDefaults {
+  marker: Required<PickMarkerOptions>;
+}
+
+export const PICKING_DEFAULTS = {
+  marker: {
+    visible: true,
+    size: 9,
+    color: 0xff69b4,
+    opacity: 1,
+    depthTest: true,
+    depthOffset: 0.5
+  }
+} as const satisfies PickingDefaults;
+
+const PICKING_CLICK_THRESHOLD = 5;
+const PICKING_MARKER_SIZE_ATTENUATION = false;
+const PICKING_MARKER_DEPTH_WRITE = false;
+const PICKING_MARKER_RENDER_ORDER = 1000;
+
 export type PickListener = (result: PickResult) => void;
 
 export class PickingManager {
@@ -29,9 +49,12 @@ export class PickingManager {
   private readonly raycaster = new THREE.Raycaster();
   private readonly marker: THREE.Points;
   private enabled = false;
-  private markerVisible = true;
-  private markerSize = 9;
-  private markerDepthOffset = 0.5;
+  private markerVisible: boolean = PICKING_DEFAULTS.marker.visible;
+  private markerSize: number = PICKING_DEFAULTS.marker.size;
+  private markerColor: THREE.ColorRepresentation = PICKING_DEFAULTS.marker.color;
+  private markerOpacity: number = PICKING_DEFAULTS.marker.opacity;
+  private markerDepthTest: boolean = PICKING_DEFAULTS.marker.depthTest;
+  private markerDepthOffset: number = PICKING_DEFAULTS.marker.depthOffset;
   private markerPositioned = false;
   private pendingPointer?: { id: number; x: number; y: number };
   private onPick?: (result: PickResult) => void;
@@ -45,15 +68,17 @@ export class PickingManager {
     this.marker = new THREE.Points(
       new THREE.BufferGeometry().setFromPoints([new THREE.Vector3()]),
       new THREE.PointsMaterial({
-        color: 0xff69b4,
+        color: this.markerColor,
         size: this.markerSize,
-        sizeAttenuation: false,
-        depthTest: true,
-        depthWrite: false
+        sizeAttenuation: PICKING_MARKER_SIZE_ATTENUATION,
+        opacity: this.markerOpacity,
+        transparent: this.markerOpacity < 1,
+        depthTest: this.markerDepthTest,
+        depthWrite: PICKING_MARKER_DEPTH_WRITE
       })
     );
     this.marker.frustumCulled = false;
-    this.marker.renderOrder = 1000;
+    this.marker.renderOrder = PICKING_MARKER_RENDER_ORDER;
     this.marker.visible = false;
     this.overlayRoot?.add(this.marker);
   }
@@ -66,13 +91,16 @@ export class PickingManager {
     if (options?.marker) {
       this.markerVisible = options.marker.visible ?? this.markerVisible;
       this.markerSize = Math.max(1, options.marker.size ?? this.markerSize);
-      const material = this.marker.material as THREE.PointsMaterial;
-      material.color.set(options.marker.color ?? material.color);
-      material.size = this.markerSize;
-      material.opacity = THREE.MathUtils.clamp(options.marker.opacity ?? material.opacity, 0, 1);
-      material.transparent = material.opacity < 1;
-      material.depthTest = options.marker.depthTest ?? material.depthTest;
+      this.markerColor = options.marker.color ?? this.markerColor;
+      this.markerOpacity = THREE.MathUtils.clamp(options.marker.opacity ?? this.markerOpacity, 0, 1);
+      this.markerDepthTest = options.marker.depthTest ?? this.markerDepthTest;
       this.markerDepthOffset = Math.max(0, options.marker.depthOffset ?? this.markerDepthOffset);
+      const material = this.marker.material as THREE.PointsMaterial;
+      material.color.set(this.markerColor);
+      material.size = this.markerSize;
+      material.opacity = this.markerOpacity;
+      material.transparent = this.markerOpacity < 1;
+      material.depthTest = this.markerDepthTest;
       material.needsUpdate = true;
     }
     this.enabled = enabled;
@@ -110,7 +138,7 @@ export class PickingManager {
     if (!this.pendingPointer || event.pointerId !== this.pendingPointer.id) return;
     const deltaX = event.clientX - this.pendingPointer.x;
     const deltaY = event.clientY - this.pendingPointer.y;
-    if (deltaX * deltaX + deltaY * deltaY > 25) this.pendingPointer = undefined;
+    if (deltaX * deltaX + deltaY * deltaY > PICKING_CLICK_THRESHOLD ** 2) this.pendingPointer = undefined;
   }
 
   handlePointerUp(event: PointerEvent): void {

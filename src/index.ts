@@ -26,7 +26,18 @@ export {
 export type { CameraViewpoint, FitOptions, Matrix3Tuple, MatrixViewpoint, SphereOrbitView, SphereViewpoint, TrackballChangeListener, TrackballConfig, TrackballMode, TrackballStatus, TurntableOrbitView, TurntableViewpoint, ViewDirection, Viewpoint } from './controls/Trackball';
 export { Toolbar } from './ui/Toolbar';
 export type { ToolbarButtonId, ToolbarConfig, ToolbarCustomButton, ToolbarIcon, ToolbarItem, ToolbarItemId, ToolbarPosition } from './ui/Toolbar';
-export type { PickListener, PickMarkerOptions, PickResult, PickingOptions } from './managers/PickingManager';
+export { PICKING_DEFAULTS } from './managers/PickingManager';
+export type { PickListener, PickMarkerOptions, PickResult, PickingDefaults, PickingOptions } from './managers/PickingManager';
+export { MEASUREMENT_DEFAULTS } from './managers/MeasurementManager';
+export type {
+  MeasurementDefaults,
+  MeasurementHit,
+  MeasurementLineOptions,
+  MeasurementListener,
+  MeasurementMarkerOptions,
+  MeasurementOptions,
+  MeasurementResult
+} from './managers/MeasurementManager';
 export type { DistanceInteractionOptions, InteractionMode, InteractionModeListener, InteractionOptions, PickpointInteractionOptions } from './managers/InteractionManager';
 export type {
   EntityDefinition,

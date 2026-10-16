@@ -61,6 +61,8 @@ navigation: {
     <h2>General Properties</h2>
     <p>General properties select the navigation mode and basic interaction behavior.</p>
 
+    <p>The complete developer-facing navigation defaults are exported as <code>TRACKBALL_DEFAULTS</code>, and the optional visualizer defaults as <code>TRACKBALL_GIZMO_DEFAULTS</code>. <code>TRACKBALL_DEFAULTS</code> separates shared values from <code>turntable</code> and <code>sphere</code> values; the sphere section includes explicit Y-up and Z-up initial positions, while its quaternion is derived from the selected up axis and target. These structures are the at-a-glance reference for mode, up axis, limits, speeds, initial distance, recentering, gizmo size, colors, opacity, and material behavior.</p>
+
     <pre><code>
   type: 'turntable', // or 'sphere'
   upAxis: 'y',
@@ -167,11 +169,11 @@ homeView: {
     z: [-250, 250]
   }
 }</code></pre>
-    <p>For unrestricted horizontal rotation, omit <code>azimuth</code>, use <code>azimuth: 'free'</code>, or use the legacy <code>[-180, 180]</code> convention.</p>
+    <p>The default horizontal rotation is clamped to <code>[-180, 180]</code> degrees. For unrestricted horizontal rotation, use <code>azimuth: 'free'</code> or the legacy <code>[-180, 180]</code> convention.</p>
     <table>
       <thead><tr><th>Property</th><th>Meaning</th><th>Units</th><th>Default</th></tr></thead>
       <tbody>
-        <tr><td><code>azimuth</code></td><td>Turntable horizontal rotation range. Use <code>'free'</code> or omit it for unlimited rotation.</td><td>Degrees</td><td>Free</td></tr>
+        <tr><td><code>azimuth</code></td><td>Turntable horizontal rotation range. Use <code>'free'</code> or omit it for unlimited rotation.</td><td>Degrees</td><td><code>[-180, 180]</code></td></tr>
         <tr><td><code>elevation</code></td><td>Turntable vertical rotation range. Values are clamped to the poles at <code>-90</code> and <code>90</code> degrees.</td><td>Degrees</td><td><code>[-90, 90]</code></td></tr>
         <tr><td><code>distance</code></td><td>Minimum and maximum camera distance from the target.</td><td>Scene units</td><td><code>[0.01, 10000]</code></td></tr>
         <tr><td><code>pan.x</code></td><td>Absolute minimum and maximum target X coordinate.</td><td>Scene units</td><td>Free</td></tr>

@@ -16,9 +16,10 @@
 
 ## Defaults and Configuration
 
-- Each feature that has configurable parameters must declare a concise, human-readable defaults structure in the code owned by that feature.
-- Keep the complete default set together rather than scattering fallback literals across constructors, initialization paths, and runtime update methods.
-- Use the same defaults structure for initialization and runtime normalization where practical, while preserving explicit caller values.
+- Each feature that has configurable parameters should preferably declare a concise, human-readable defaults structure in the code owned by that feature.
+- The feature's defaults structures should preferably appear clearly near the beginning of its owning file rather than scattering fallback literals across constructors, initialization paths, and runtime update methods.
+- When a feature exposes author-facing options, its public defaults structure should mirror the option declaration shape and contain only parameters authors can set at declaration time or runtime. It should not include fixed implementation constants.
+- Fixed implementation defaults should preferably live in a separate private structure or grouped constants in the same owning module. Use the public defaults structure for author-facing initialization and runtime normalization where practical, while preserving explicit caller values.
 - Update the relevant API documentation and architectural notes when defaults or their ownership change.
 
 ## Audience Levels

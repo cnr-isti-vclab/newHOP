@@ -70,12 +70,6 @@
     const presenter = new Presenter({ mount: 'viewer' });
     new Toolbar(presenter, { position: 'bottom-center' });
 
-    presenter.setInteractionMode('pickpoint', {
-      handlers: {
-        onPick: (result) => console.log('Picked point:', result.point.toArray())
-      }
-    });
-
     document.querySelectorAll('[data-light]').forEach((input) => {
       input.addEventListener('change', (event) => {
         const checkbox = event.currentTarget;
@@ -84,12 +78,6 @@
         presenter.lighting.setSceneLightEnabled(id, checkbox.checked);
         document.getElementById('status').textContent = `${id}: ${checkbox.checked ? 'on' : 'off'}`;
       });
-    });
-
-    document.getElementById('flashlight-toggle').addEventListener('change', (event) => {
-      const checkbox = event.currentTarget;
-      presenter.lighting.setFlashlight({ enabled: checkbox.checked });
-      document.getElementById('status').textContent = `Flashlight: ${checkbox.checked ? 'on' : 'off'}`;
     });
 
     document.getElementById('flashlight-mode-toggle').addEventListener('change', (event) => {
