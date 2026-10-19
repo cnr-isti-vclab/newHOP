@@ -61,6 +61,8 @@ export class Toolbar {
   private readonly measurementPanel?: HTMLDivElement;
   private readonly unsubscribeMeasurement?: () => void;
   private readonly unsubscribeInteraction?: () => void;
+  private readonly sectionPanel?: HTMLDivElement;
+  private sectionPanelOpen = false;
   private measurementHasResult = false;
 
   constructor(private readonly presenter: Presenter, config: ToolbarConfig = {}) {
@@ -116,6 +118,11 @@ export class Toolbar {
           this.refresh();
         });
       }
+      if (spec.id === 'section') {
+        const panel = createSectionPanel(this.presenter);
+        this.sectionPanel = panel;
+        this.element.appendChild(panel);
+      }
     }
     mount.appendChild(this.element);
     this.refresh();
@@ -143,6 +150,11 @@ export class Toolbar {
       this.measurementPanel.hidden = !active;
       if (active && !this.measurementHasResult) updateMeasurementPanel(this.measurementPanel, undefined);
       this.element.classList.toggle('newhop-toolbar--measurement-active', active);
+    }
+    if (this.sectionPanel) {
+      this.sectionPanel.hidden = !this.sectionPanelOpen;
+      updateSectionPanel(this.sectionPanel, this.presenter);
+      this.element.classList.toggle('newhop-toolbar--section-active', this.sectionPanelOpen);
     }
   }
 
@@ -221,7 +233,9 @@ export class Toolbar {
           label: 'Section plane',
           icon: '◐',
           toggle: true,
-          onClick: () => presenter.clipping.toggle(),
+          onClick: () => {
+            this.sectionPanelOpen = !this.sectionPanelOpen;
+          },
           isActive: () => presenter.clipping.isEnabled()
         };
       case 'camera':
@@ -293,6 +307,104 @@ function anchorContainer(container: HTMLElement): void {
   }
 }
 
+function createSectionPanel(presenter: Presenter): HTMLDivElement {
+  const panel = document.createElement('div');
+  panel.className = 'newhop-toolbar__section-panel';
+  panel.innerHTML = '<strong>Section planes</strong>';
+
+  for (const axis of ['x', 'y', 'z'] as const) {
+    const row = document.createElement('div');
+    row.className = 'newhop-toolbar__section-row';
+
+    const axisButton = document.createElement('button');
+    axisButton.type = 'button';
+    axisButton.className = 'newhop-toolbar__section-axis';
+    axisButton.textContent = axis.toUpperCase();
+    axisButton.dataset.sectionAxis = axis;
+    axisButton.dataset.sectionProperty = 'enabled';
+    axisButton.addEventListener('click', () => {
+      presenter.setSectionPlaneEnabled(axis, !presenter.getSectionPlane(axis).enabled);
+      updateSectionPanel(panel, presenter);
+    });
+
+    const position = document.createElement('input');
+    position.type = 'range';
+    position.min = '0';
+    position.max = '1';
+    position.step = '0.01';
+    position.dataset.sectionAxis = axis;
+    position.dataset.sectionProperty = 'position';
+    position.addEventListener('input', () => {
+      presenter.setSectionPlane(axis, {
+        mode: 'relative',
+        position: Number(position.value),
+        enabled: true
+      });
+      updateSectionPanel(panel, presenter);
+    });
+
+    const inverted = document.createElement('button');
+    inverted.type = 'button';
+    inverted.className = 'newhop-toolbar__section-invert';
+    inverted.textContent = '+/-';
+    inverted.title = `Invert ${axis.toUpperCase()} plane`;
+    inverted.dataset.sectionAxis = axis;
+    inverted.dataset.sectionProperty = 'inverted';
+    inverted.addEventListener('click', () => {
+      presenter.setSectionPlane(axis, {
+        inverted: !presenter.getSectionPlane(axis).inverted
+      });
+      updateSectionPanel(panel, presenter);
+    });
+
+    row.append(axisButton, position, inverted);
+    panel.append(row);
+  }
+
+  const visibilityRow = document.createElement('label');
+  visibilityRow.className = 'newhop-toolbar__section-visibility';
+  const visibility = document.createElement('input');
+  visibility.type = 'checkbox';
+  visibility.dataset.sectionVisibility = 'true';
+  visibility.addEventListener('change', () => presenter.setSectionPlanesVisible(visibility.checked));
+  visibilityRow.append(visibility, ' show planes');
+
+  const reset = document.createElement('button');
+  reset.type = 'button';
+  reset.className = 'newhop-toolbar__section-reset';
+  reset.title = 'Reset section planes';
+  reset.textContent = 'Reset';
+  reset.addEventListener('click', () => {
+    presenter.resetSectionPlanes();
+    updateSectionPanel(panel, presenter);
+  });
+  const footer = document.createElement('div');
+  footer.className = 'newhop-toolbar__section-footer';
+  footer.append(reset, visibilityRow);
+  panel.append(footer);
+  return panel;
+}
+
+function updateSectionPanel(panel: HTMLDivElement, presenter: Presenter): void {
+  for (const axis of ['x', 'y', 'z'] as const) {
+    const state = presenter.getSectionPlane(axis);
+    const position = panel.querySelector<HTMLInputElement>(`input[data-section-axis="${axis}"][data-section-property="position"]`);
+    const axisButton = panel.querySelector<HTMLButtonElement>(`button[data-section-axis="${axis}"][data-section-property="enabled"]`);
+    const inverted = panel.querySelector<HTMLButtonElement>(`button[data-section-axis="${axis}"][data-section-property="inverted"]`);
+    if (position) position.value = state.mode === 'relative' ? String(state.position) : '0.5';
+    if (axisButton) {
+      axisButton.classList.toggle('newhop-toolbar__section-axis--active', state.enabled);
+      axisButton.setAttribute('aria-pressed', String(state.enabled));
+    }
+    if (inverted) {
+      inverted.classList.toggle('newhop-toolbar__section-invert--active', state.inverted);
+      inverted.setAttribute('aria-pressed', String(state.inverted));
+    }
+  }
+  const visibility = panel.querySelector<HTMLInputElement>('input[data-section-visibility="true"]');
+  if (visibility) visibility.checked = presenter.areSectionPlanesVisible();
+}
+
 function injectStyles(): void {
   if (document.getElementById(STYLE_ID)) return;
   const style = document.createElement('style');
@@ -321,6 +433,28 @@ function injectStyles(): void {
 }
 .newhop-toolbar__pickpoint-label { color: #aab4c3; }
 .newhop-toolbar__pickpoint-value { margin-top: 2px; }
+.newhop-toolbar__section-panel {
+  min-width: 184px;
+  padding: 8px 10px;
+  border: 1px solid rgba(125, 211, 252, 0.35);
+  border-radius: 6px;
+  background: rgba(8, 13, 24, 0.94);
+  color: #dbeafe;
+  font: 12px/1.35 Consolas, "Courier New", monospace;
+}
+.newhop-toolbar__section-panel strong { display: block; margin-bottom: 6px; color: #ffffff; }
+.newhop-toolbar__section-row { display: grid; grid-template-columns: 26px minmax(70px, 1fr) 36px; gap: 5px; align-items: center; }
+.newhop-toolbar__section-axis,
+.newhop-toolbar__section-invert { border: 1px solid rgba(125, 211, 252, 0.35); border-radius: 4px; background: rgba(30, 41, 59, 0.9); color: #aab4c3; cursor: pointer; font: inherit; }
+.newhop-toolbar__section-axis { padding: 2px 4px; font-weight: 700; }
+.newhop-toolbar__section-axis--active,
+.newhop-toolbar__section-invert--active { border-color: #7dd3fc; background: #164e63; color: #ffffff; }
+.newhop-toolbar__section-invert { padding: 2px 3px; }
+.newhop-toolbar__section-row label,
+.newhop-toolbar__section-visibility { white-space: nowrap; }
+.newhop-toolbar__section-footer { display: flex; align-items: center; gap: 8px; margin-top: 7px; }
+.newhop-toolbar__section-visibility { color: #aab4c3; }
+.newhop-toolbar__section-reset { padding: 3px 6px; border: 1px solid rgba(125, 211, 252, 0.35); border-radius: 4px; background: rgba(30, 41, 59, 0.9); color: #dbeafe; cursor: pointer; font: inherit; }
 .newhop-toolbar--top-left,
 .newhop-toolbar--top-center,
 .newhop-toolbar--top-right { flex-direction: column; }

@@ -8,7 +8,7 @@ import { TrackballGizmo } from '../controls/TrackballGizmo';
 import { MeasurementManager } from '../managers/MeasurementManager';
 import { PickingManager } from '../managers/PickingManager';
 import { InteractionManager, type InteractionMode, type InteractionOptions, type PickpointInteractionOptions, type DistanceInteractionOptions } from '../managers/InteractionManager';
-import { ClippingManager } from '../managers/ClippingManager';
+import { ClippingManager, type ClipAxis, type ClipPlaneState, type ClipPlaneUpdate } from '../managers/ClippingManager';
 import { LightingManager, type SceneLightingDescription } from '../managers/LightingManager';
 import { VERSION } from '../version';
 
@@ -97,10 +97,10 @@ export class Presenter {
     this.scene.add(this.perspectiveCamera);
     this.trackball = new Trackball(this.camera, this.renderer.domElement);
     this.trackballGizmo = new TrackballGizmo(this.camera);
-    this.measurement = new MeasurementManager(this.root, this.camera, this.renderer.domElement);
-    this.picking = new PickingManager(this.root, this.camera, this.renderer.domElement, this.pickingOverlayRoot);
+    this.clipping = new ClippingManager(this.root, this.helperRoot);
+    this.measurement = new MeasurementManager(this.root, this.camera, this.renderer.domElement, (point) => this.clipping.isPointVisible(point));
+    this.picking = new PickingManager(this.root, this.camera, this.renderer.domElement, this.pickingOverlayRoot, (point) => this.clipping.isPointVisible(point));
     this.interaction = new InteractionManager(this.picking, this.measurement);
-    this.clipping = new ClippingManager(this.root);
     this.lighting = new LightingManager(this.scene, this.camera, () => this.trackball.getUpAxis());
     this.scene.add(this.root);
     this.scene.add(this.helperRoot);
@@ -260,6 +260,7 @@ export class Presenter {
 
   setSpotAppearance(id: string, appearance: Partial<SpotAppearance>): void {
     this.spotManager.setAppearance(id, appearance);
+    this.clipping.apply();
   }
 
   setSpotHighlighted(id: string, highlighted: boolean): void {
@@ -282,6 +283,7 @@ export class Presenter {
     this.extentGrids.clear();
     resetTransform(this.root);
     this.sceneBounds.makeEmpty();
+    this.clipping.setBounds(this.sceneBounds);
   }
 
   fitToScene(direction?: ViewDirection, recenter = false, duration = 0): void {
@@ -321,6 +323,7 @@ export class Presenter {
 
   setObjectAppearance(id: string, appearance: Partial<ObjectAppearance>): void {
     this.objectManager.setAppearance(id, appearance);
+    this.clipping.apply();
   }
 
   getObjectMaterial(id: string): MaterialProperties {
@@ -329,6 +332,7 @@ export class Presenter {
 
   setObjectMaterial(id: string, material: Partial<MaterialProperties>): void {
     this.objectManager.setMaterial(id, material);
+    this.clipping.apply();
   }
 
   getSceneTransform(): SceneTransformSnapshot {
@@ -516,6 +520,7 @@ export class Presenter {
 
   private refreshSceneBounds(): void {
     this.sceneBounds = this.objectManager.getBounds();
+    this.clipping.setBounds(this.sceneBounds);
     this.updateCameraRange();
     if (this.sceneBounds.isEmpty()) return;
     for (const helper of this.extentHelpers) helper.box.copy(this.sceneBounds);
@@ -550,14 +555,17 @@ export class Presenter {
 
   setEntityColor(id: string, color: number): void {
     this.getUnambiguousEntityManager(id).setColor(id, color);
+    this.clipping.apply();
   }
 
   setEntityAlpha(id: string, alpha: number): void {
     this.getUnambiguousEntityManager(id).setAlpha(id, alpha);
+    this.clipping.apply();
   }
 
   setEntityDoubleSided(id: string, doubleSided: boolean): void {
     this.getUnambiguousEntityManager(id).setDoubleSided(id, doubleSided);
+    this.clipping.apply();
   }
 
   setEntitiesVisibilityByTag(tag: string, visible: boolean): void {
@@ -594,7 +602,35 @@ export class Presenter {
 
   setClipPlane(axis: 'x' | 'y' | 'z', offset: number, enabled = true): void {
     this.clipping.setAxis(axis, offset);
-    this.clipping.setEnabled(enabled);
+    this.clipping.setEnabled(axis, enabled);
+  }
+
+  getSectionPlane(axis: ClipAxis): ClipPlaneState {
+    return this.clipping.getPlane(axis);
+  }
+
+  getSectionPlanes(): ClipPlaneState[] {
+    return this.clipping.getPlanes();
+  }
+
+  setSectionPlane(axis: ClipAxis, update: ClipPlaneUpdate): void {
+    this.clipping.setPlane(axis, update);
+  }
+
+  setSectionPlaneEnabled(axis: ClipAxis, enabled: boolean): void {
+    this.clipping.setEnabled(axis, enabled);
+  }
+
+  setSectionPlanesVisible(visible: boolean): void {
+    this.clipping.setPlanesVisible(visible);
+  }
+
+  areSectionPlanesVisible(): boolean {
+    return this.clipping.arePlanesVisible();
+  }
+
+  resetSectionPlanes(): void {
+    this.clipping.reset();
   }
 
   dispose(): void {
@@ -609,6 +645,7 @@ export class Presenter {
     this.renderer.domElement.removeEventListener('dblclick', this.onDoubleClick);
     window.removeEventListener('resize', this.resize);
     this.clearScene();
+    this.clipping.dispose();
     this.clearBackground();
     this.sceneReadyListeners.clear();
     this.spotClickListeners.clear();

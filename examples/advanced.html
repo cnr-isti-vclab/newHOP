@@ -119,7 +119,7 @@
     const presenter = new Presenter({ mount: 'viewer' });
     new Toolbar(presenter, {
       position: 'bottom-center',
-      buttons: ['home', 'fit', 'zoomIn', 'zoomOut', 'camera']
+      buttons: ['home', 'fit', 'zoomIn', 'zoomOut', 'section', 'camera']
     });
 
     const onMeasurementComplete = (result) => {
@@ -346,7 +346,9 @@
 
     presenter.onSceneReady(buildAppearancePanel);
 
-    presenter.setClipPlane('z', 0.0, false);
+    presenter.setSectionPlane('x', { mode: 'relative', position: 0.5, enabled: false });
+    presenter.setSectionPlane('y', { mode: 'relative', position: 0.5, enabled: false });
+    presenter.setSectionPlane('z', { mode: 'relative', position: 0.5, enabled: false });
 
     window.addEventListener('keydown', (event) => {
       if (event.key === 'm') {
@@ -361,7 +363,10 @@
           { handlers: { onPick } }
         );
       }
-      if (event.key === 'c') presenter.clipping.toggle();
+      if (event.key === 'c') {
+        const plane = presenter.getSectionPlane('x');
+        presenter.setSectionPlaneEnabled('x', !plane.enabled);
+      }
       if (event.key === 'f') presenter.fitToScene();
     });
   </script>

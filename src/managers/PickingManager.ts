@@ -58,14 +58,16 @@ export class PickingManager {
   private markerDepthOffset: number = PICKING_DEFAULTS.marker.depthOffset;
   private markerPositioned = false;
   private pendingPointer?: { id: number; x: number; y: number };
+  private readonly isPointVisible: (point: THREE.Vector3) => boolean;
   private onPick?: (result: PickResult) => void;
   private readonly pickListeners = new Set<PickListener>();
 
-  constructor(root: THREE.Object3D, camera: THREE.Camera, element: HTMLElement, overlayRoot?: THREE.Object3D) {
+  constructor(root: THREE.Object3D, camera: THREE.Camera, element: HTMLElement, overlayRoot?: THREE.Object3D, isPointVisible: (point: THREE.Vector3) => boolean = () => true) {
     this.root = root;
     this.overlayRoot = overlayRoot;
     this.camera = camera;
     this.element = element;
+    this.isPointVisible = isPointVisible;
     this.marker = new THREE.Points(
       new THREE.BufferGeometry().setFromPoints([new THREE.Vector3()]),
       new THREE.PointsMaterial({
@@ -172,7 +174,7 @@ export class PickingManager {
     const normalizedY = -((clientY - rect.top) / rect.height) * 2 + 1;
     this.raycaster.setFromCamera(new THREE.Vector2(normalizedX, normalizedY), this.camera);
     const hits = this.raycaster.intersectObjects(this.root.children, true);
-    const hit = hits.find((entry) => allowsEntityParticipation(entry.object, 'picking'));
+    const hit = hits.find((entry) => allowsEntityParticipation(entry.object, 'picking') && this.isPointVisible(entry.point));
     if (!hit) return undefined;
     const point = hit.point.clone();
     const normal = hit.face?.normal ? hit.face.normal.clone().transformDirection(hit.object.matrixWorld) : new THREE.Vector3(0, 1, 0);

@@ -93,11 +93,14 @@ export class MeasurementManager {
   private pendingPointer?: { id: number; x: number; y: number };
   private onComplete?: (result: MeasurementResult) => void;
   private readonly listeners = new Set<MeasurementListener>();
+  private readonly isPointVisible: (point: THREE.Vector3) => boolean;
 
-  constructor(root: THREE.Object3D, camera: THREE.Camera, element: HTMLElement) {
+  constructor(root: THREE.Object3D, camera: THREE.Camera, element: HTMLElement, isPointVisible: (point: THREE.Vector3) => boolean = () => true) {
     this.root = root;
     this.camera = camera;
     this.element = element;
+    this.isPointVisible = isPointVisible;
+    this.visualGroup.userData.clippingExcluded = true;
     this.root.add(this.visualGroup);
   }
 
@@ -226,7 +229,7 @@ export class MeasurementManager {
     const normalizedY = -((clientY - rect.top) / rect.height) * 2 + 1;
     this.raycaster.setFromCamera(new THREE.Vector2(normalizedX, normalizedY), this.camera);
     const hits = this.raycaster.intersectObjects(this.root.children, true);
-    const hit = hits.find((entry) => !this.isVisualObject(entry.object) && allowsEntityParticipation(entry.object, 'measurement'));
+    const hit = hits.find((entry) => !this.isVisualObject(entry.object) && allowsEntityParticipation(entry.object, 'measurement') && this.isPointVisible(entry.point));
     if (!hit) return undefined;
     const point = hit.point.clone();
     const normal = hit.face?.normal ? hit.face.normal.clone().transformDirection(hit.object.matrixWorld) : new THREE.Vector3(0, 1, 0);

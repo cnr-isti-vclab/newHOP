@@ -9,6 +9,7 @@ export { MeasurementManager } from './managers/MeasurementManager';
 export { PickingManager } from './managers/PickingManager';
 export { InteractionManager } from './managers/InteractionManager';
 export { ClippingManager } from './managers/ClippingManager';
+export type { ClipAxis, ClipPlaneState, ClipPlaneUpdate, ClipPositionMode } from './managers/ClippingManager';
 export { LightingManager } from './managers/LightingManager';
 export type { FlashlightOrientation } from './managers/LightingManager';
 export { Trackball } from './controls/Trackball';

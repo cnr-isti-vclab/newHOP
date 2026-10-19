@@ -44,6 +44,15 @@ This is a working plan, not a promise of release dates. Keep entries small enoug
 - Define and document dynamic geometry bounds refresh and renderer update behavior.
 - Add an example covering a shaded procedural object, a dynamic polyline or grid, and an overlay gizmo using the existing behavior profiles.
 
+### Clipping and Section Planes
+
+- The initial implementation provides three independently enabled, axis-aligned open section planes. Relative positions use normalized scene bounds and absolute positions use world-space coordinates.
+- Mesh objects are required to support clipping. Primitive lines and points participate when their materials support Three.js clipping; Gaussian-splat clipping remains optional.
+- Helpers, gizmos, and measurement graphics remain outside clipping through participation policy and dedicated overlay roots.
+- Keep plane movement cheap by updating persistent shader planes and shared active-plane state without CPU geometry slicing or per-move scene traversal.
+- The initial toolbar exposes per-axis enable/invert controls and a global section-plane visibility toggle; keep visual helpers outside bounds, clipping, picking, and measurement.
+- Defer per-object opposite-side clipping for before/after comparisons, solid caps, translucent discarded halves, and oblique planes until the axis-aligned open workflow is stable.
+
 ### Model Animation
 
 - Add focused tests for clip discovery, clip selection, duration clamping, mixer lifecycle, declaration-time autoplay, and repeated or skinned model instances.

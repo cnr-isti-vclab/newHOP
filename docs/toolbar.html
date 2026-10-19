@@ -55,7 +55,7 @@ const toolbar = new Toolbar(presenter, {
     <table>
       <thead><tr><th>ID</th><th>Role</th><th>Repeatable</th></tr></thead>
       <tbody>
-        <tr><td><code>home</code>, <code>fit</code>, <code>zoomIn</code>, <code>zoomOut</code>, <code>measure</code>, <code>pickpoint</code>, <code>section</code>, <code>camera</code>, <code>fullscreen</code></td><td>Built-in interactive controls. <code>measure</code> and <code>pickpoint</code> activate mutually exclusive auxiliary interaction modes; <code>pickpoint</code> shows the latest picked object ID and point coordinates. <code>camera</code> switches between perspective and orthographic projection and is highlighted in orthographic mode.</td><td>No</td></tr>
+        <tr><td><code>home</code>, <code>fit</code>, <code>zoomIn</code>, <code>zoomOut</code>, <code>measure</code>, <code>pickpoint</code>, <code>section</code>, <code>camera</code>, <code>fullscreen</code></td><td>Built-in interactive controls. <code>measure</code> and <code>pickpoint</code> activate mutually exclusive auxiliary interaction modes; <code>pickpoint</code> shows the latest picked object ID and point coordinates; <code>section</code> opens X/Y/Z checkable axis buttons, a relative-position slider for each axis that enables the axis when moved, compact <code>+/-</code> inversion controls, global plane-helper visibility, and Reset. Reset returns the planes to midpoint, non-inverted, disabled clipping.</td><td>No</td></tr>
         <tr><td><code>spacer</code></td><td>Fixed-size empty separation.</td><td>Yes</td></tr>
         <tr><td><code>hardrule</code></td><td>Fixed-size visual separator.</td><td>Yes</td></tr>
       </tbody>
