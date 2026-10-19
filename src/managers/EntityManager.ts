@@ -1,6 +1,35 @@
 import * as THREE from 'three';
-import type { AnimationClipInfo, AnimationLoopMode, EntityDefinition, EntityTransform, EntityTransformSnapshot, MaterialProperties, Matrix4Tuple, ObjectAnimationOptions, ObjectAnimationState, ObjectAppearance, SpotAppearance, Vector3Tuple } from '../types/SceneTypes';
+import type { AnimationClipInfo, AnimationLoopMode, EntityBehaviorProfile, EntityDefinition, EntityParticipation, EntityTransform, EntityTransformSnapshot, MaterialProperties, Matrix4Tuple, ObjectAnimationOptions, ObjectAnimationState, ObjectAppearance, SpotAppearance, Vector3Tuple } from '../types/SceneTypes';
 import { ModelLoader, type ModelLoadDefinition } from '../loaders/ModelLoader';
+
+type NormalizedEntityParticipation = Required<EntityParticipation>;
+
+const ENTITY_BEHAVIOR_DEFAULTS: Record<EntityBehaviorProfile, NormalizedEntityParticipation> = {
+  scene: {
+    bounds: true,
+    clipping: true,
+    picking: true,
+    measurement: true
+  },
+  helper: {
+    bounds: false,
+    clipping: true,
+    picking: true,
+    measurement: false
+  },
+  overlay: {
+    bounds: false,
+    clipping: false,
+    picking: false,
+    measurement: false
+  },
+  'interactive-helper': {
+    bounds: false,
+    clipping: false,
+    picking: true,
+    measurement: false
+  }
+};
 
 interface MaterialState {
   mesh: THREE.Mesh;
@@ -27,6 +56,7 @@ export class EntityManager {
   private readonly root: THREE.Group;
   private readonly objects = new Map<string, THREE.Object3D>();
   private readonly definitions = new Map<string, EntityDefinition>();
+  private readonly participation = new Map<string, NormalizedEntityParticipation>();
   private readonly materialStates = new Map<string, MaterialState[]>();
   private readonly animationStates = new Map<string, AnimationState>();
   private readonly animationListeners = new Map<string, Set<ObjectAnimationListener>>();
@@ -60,10 +90,13 @@ export class EntityManager {
     }
     object.visible = definition.visible ?? true;
     applyShadowFlags(object);
+    const entityParticipation = normalizeParticipation(definition);
     object.userData.entity = definition;
+    object.userData.entityParticipation = entityParticipation;
     this.root.add(object);
     this.objects.set(definition.id, object);
     this.definitions.set(definition.id, definition);
+    this.participation.set(definition.id, entityParticipation);
     this.materialStates.set(definition.id, materialStates);
     this.applyAppearance(definition.id);
     const animationState = createAnimationState(object);
@@ -92,6 +125,7 @@ export class EntityManager {
     }
     this.objects.delete(id);
     this.definitions.delete(id);
+    this.participation.delete(id);
     this.materialStates.delete(id);
     this.animationStates.delete(id);
     this.animationListeners.delete(id);
@@ -108,6 +142,10 @@ export class EntityManager {
 
   getDefinition(id: string): EntityDefinition | undefined {
     return this.definitions.get(id);
+  }
+
+  getParticipation(id: string): NormalizedEntityParticipation | undefined {
+    return this.participation.get(id);
   }
 
   getIds(): string[] {
@@ -364,8 +402,10 @@ export class EntityManager {
 
   getBounds(): THREE.Box3 {
     this.root.updateMatrixWorld(true);
-    const bounds = new THREE.Box3().setFromObject(this.root);
-    for (const object of this.objects.values()) {
+    const bounds = new THREE.Box3();
+    for (const [id, object] of this.objects) {
+      if (!this.participation.get(id)?.bounds) continue;
+      bounds.union(new THREE.Box3().setFromObject(object));
       const splat = object as THREE.Object3D & { getBoundingBox?: () => THREE.Box3 };
       const splatBounds = splat.getBoundingBox?.();
       if (splatBounds && !splatBounds.isEmpty()) {
@@ -444,6 +484,17 @@ export class EntityManager {
       state.mesh.material = materials.length === 1 ? materials[0] : materials;
     }
   }
+}
+
+function normalizeParticipation(definition: EntityDefinition): NormalizedEntityParticipation {
+  const profile = definition.behavior ?? 'scene';
+  const participation = {
+    ...ENTITY_BEHAVIOR_DEFAULTS[profile],
+    ...definition.participation
+  };
+  if (definition.clippable !== undefined) participation.clipping = definition.clippable;
+  if (definition.measurable !== undefined) participation.measurement = definition.measurable;
+  return participation;
 }
 
 function assertTransformMode(transform: EntityTransform): void {

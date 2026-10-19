@@ -1,6 +1,7 @@
 import type * as THREE from 'three';
 
 export type EntityType = 'model' | 'splat' | 'hotspot' | 'geometry';
+export type EntityBehaviorProfile = 'scene' | 'helper' | 'overlay' | 'interactive-helper';
 export type Vector3Tuple = [number, number, number];
 /** Euler rotation in degrees for scene authoring. Three.js runtime rotations remain radians. */
 export type EulerTuple = [number, number, number];
@@ -21,8 +22,17 @@ export interface EntityVisuals {
   shadeless?: boolean;
   visible?: boolean;
   tags?: string[];
+  behavior?: EntityBehaviorProfile;
+  participation?: EntityParticipation;
   clippable?: boolean;
   measurable?: boolean;
+}
+
+export interface EntityParticipation {
+  bounds?: boolean;
+  clipping?: boolean;
+  picking?: boolean;
+  measurement?: boolean;
 }
 
 export interface SpotVisuals {
@@ -35,6 +45,8 @@ export interface SpotVisuals {
   doubleSided?: boolean;
   visible?: boolean;
   tags?: string[];
+  behavior?: EntityBehaviorProfile;
+  participation?: EntityParticipation;
   clippable?: boolean;
   measurable?: boolean;
 }

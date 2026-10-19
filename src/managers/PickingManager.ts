@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { allowsEntityParticipation } from './EntityPolicy';
 
 export interface PickResult {
   point: THREE.Vector3;
@@ -171,7 +172,7 @@ export class PickingManager {
     const normalizedY = -((clientY - rect.top) / rect.height) * 2 + 1;
     this.raycaster.setFromCamera(new THREE.Vector2(normalizedX, normalizedY), this.camera);
     const hits = this.raycaster.intersectObjects(this.root.children, true);
-    const hit = hits[0];
+    const hit = hits.find((entry) => allowsEntityParticipation(entry.object, 'picking'));
     if (!hit) return undefined;
     const point = hit.point.clone();
     const normal = hit.face?.normal ? hit.face.normal.clone().transformDirection(hit.object.matrixWorld) : new THREE.Vector3(0, 1, 0);

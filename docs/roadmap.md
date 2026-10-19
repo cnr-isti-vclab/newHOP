@@ -16,6 +16,7 @@ This is a working plan, not a promise of release dates. Keep entries small enoug
 - Static HTML documentation includes an Interaction reference covering tool ownership and the intended picking and click contracts.
 - The basic Toolbar includes an optional `pickpoint` control with an attached object ID and coordinate readout.
 - Auxiliary interaction modes include configurable pickpoint feedback through `setInteractionMode(mode, options?)`.
+- Entity behavior profiles currently control bounds, clipping, generic picking, and distance measurement for imported, hotspot, and procedural entities.
 
 ## Next Priorities
 
@@ -34,6 +35,14 @@ This is a working plan, not a promise of release dates. Keep entries small enoug
 - Decide which viewer settings belong in `Presenter` construction, scene loading, or runtime methods, and consider an explicitly advanced Three.js escape hatch only after the stable configuration surface is defined.
 - Decide how remaining reserved visual flags such as `clippable` and `measurable` should become operational.
 - Extend runtime transform APIs only if later use cases require additional constraints or animation support.
+
+### Unified Entities and Procedural Geometry
+
+- Extend the entity model so imported models, Three.js primitives, custom buffer geometry, dynamic geometry, and gizmos share identity, visibility, transforms, and lifecycle management.
+- Add runtime APIs for mutating or replacing procedural geometry while preserving entity identity, interaction state, and disposal ownership.
+- Support simple unlit materials and custom shaders for gizmos, while allowing standard shaded materials for intermediate procedural scene geometry.
+- Define and document dynamic geometry bounds refresh and renderer update behavior.
+- Add an example covering a shaded procedural object, a dynamic polyline or grid, and an overlay gizmo using the existing behavior profiles.
 
 ### Model Animation
 

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { allowsEntityParticipation } from './EntityPolicy';
 
 export type ClipAxis = 'x' | 'y' | 'z';
 
@@ -42,6 +43,7 @@ export class ClippingManager {
   apply(): void {
     this.root.traverse((object) => {
       if (!(object instanceof THREE.Mesh)) return;
+      if (!allowsEntityParticipation(object, 'clipping')) return;
       const materials = Array.isArray(object.material) ? object.material : [object.material];
       for (const material of materials) {
         const clipped = material as THREE.Material & { clippingPlanes?: THREE.Plane[] };

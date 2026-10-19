@@ -21,6 +21,7 @@
     <nav><a href="index.html">Documentation index</a> · <a href="../index.html">Examples</a></nav>
     <h1>Objects</h1>
     <p class="lede">The <code>objects</code> block defines named scene content. Each entry is either a model, a Gaussian splat, or a Three.js <code>BufferGeometry</code> supplied directly by application code. Object identifiers are unique within the <code>objects</code> block; a spot may use the same identifier because spots have their own namespace.</p>
+    <p>Objects can use a named <code>behavior</code> profile to control participation in scene bounds, clipping, generic picking, and distance measurement without requiring several independent flags. The default is <code>'scene'</code>. Use <code>'helper'</code> for supporting scene geometry, <code>'overlay'</code> for gizmos and overlays, or <code>'interactive-helper'</code> for pickable helper geometry. A partial <code>participation</code> object is available for exceptional cases.</p>
     <p>Generic interaction is documented on the <a href="interaction.html">Interaction</a> page. The intended generic picker scope is managed objects, including imported child geometry resolved to its owning object.</p>
 
     <h2>Objects Block Example</h2>
@@ -41,6 +42,7 @@
   marker: {
     geometry: new THREE.BoxGeometry(20, 20, 20),
     material: new THREE.MeshStandardMaterial({ color: 0xffc857 }),
+    behavior: 'helper',
     position: [100, 100, 100],
     rotation: [17, 40, 6],
     scale: 1,

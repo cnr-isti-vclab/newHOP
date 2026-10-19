@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { allowsEntityParticipation } from './EntityPolicy';
 
 export interface MeasurementHit {
   point: THREE.Vector3;
@@ -225,7 +226,7 @@ export class MeasurementManager {
     const normalizedY = -((clientY - rect.top) / rect.height) * 2 + 1;
     this.raycaster.setFromCamera(new THREE.Vector2(normalizedX, normalizedY), this.camera);
     const hits = this.raycaster.intersectObjects(this.root.children, true);
-    const hit = hits.find((entry) => !this.isVisualObject(entry.object));
+    const hit = hits.find((entry) => !this.isVisualObject(entry.object) && allowsEntityParticipation(entry.object, 'measurement'));
     if (!hit) return undefined;
     const point = hit.point.clone();
     const normal = hit.face?.normal ? hit.face.normal.clone().transformDirection(hit.object.matrixWorld) : new THREE.Vector3(0, 1, 0);
