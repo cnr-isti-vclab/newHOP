@@ -2,7 +2,7 @@ export * as THREE from 'three';
 export { VERSION } from './version';
 export { Presenter } from './core/Presenter';
 export type { PresenterConfig, SceneReadyListener, SpotClickEvent, SpotClickListener } from './core/Presenter';
-export { MODEL_LOAD_DEFAULTS, ModelLoader } from './loaders/ModelLoader';
+export { MODEL_LOAD_DEFAULTS, POINT_CLOUD_DEFAULTS, ModelLoader } from './loaders/ModelLoader';
 export type { ModelLoadDefinition, ModelLoadDefaults, ModelLoaderConfig } from './loaders/ModelLoader';
 export { EntityManager } from './managers/EntityManager';
 export { MeasurementManager } from './managers/MeasurementManager';
@@ -60,6 +60,7 @@ export type {
   HotspotEntity,
   HotspotPrimitive,
   ModelEntity,
+  PointCloudEntity,
   SceneDescription,
   SceneLightDefinition,
   SceneLightingDescription,

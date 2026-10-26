@@ -111,6 +111,17 @@ presenter.removeObject('newMarker');</code></pre>
 }</code></pre>
     <p>See the <a href="../examples/splats.html">Gaussian splat example</a> for a complete scene.</p>
 
+    <h4>Point-cloud objects</h4>
+    <p>Set <code>type: 'pointcloud'</code> to render the source vertices as points instead of triangles. This is an explicit representation choice: even if the source file contains faces, faces and indices are ignored. The default point size is <code>0.01</code> world units; set <code>pointSize</code> when needed.</p>
+    <pre><code>objects: {
+  survey: {
+    type: 'pointcloud',
+    format: 'ply',
+    file: 'https://my.site.com/assets?file=33552_ll',
+    pointSize: 0.02
+  }
+}</code></pre>
+
     <h3>Animation</h3>
     <p>GLB and GLTF files can include animation clips. Add an <code>animation</code> block to a model object to start playback automatically. The <code>clip</code> property is optional; when it is omitted, the first clip in the file is played. This is useful for files whose clip names are unknown or empty.</p>
     <pre><code>objects: {

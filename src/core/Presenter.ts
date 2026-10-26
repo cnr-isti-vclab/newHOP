@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { SparkRenderer } from '@sparkjsdev/spark';
-import type { AnimationClipInfo, CameraProjection, CameraType, EntityDefinition, EntityTransform, EntityTransformSnapshot, GeometryEntity, HelperDefinition, HotspotEntity, HotspotPrimitive, MaterialProperties, ModelEntity, ObjectAnimationOptions, ObjectAnimationState, ObjectAppearance, SceneDescription, SceneObjectDefinition, SceneTransform, SceneTransformSnapshot, SplatEntity, SpotAppearance, SpotDefinition, WorldBackground } from '../types/SceneTypes';
+import type { AnimationClipInfo, CameraProjection, CameraType, EntityDefinition, EntityTransform, EntityTransformSnapshot, GeometryEntity, HelperDefinition, HotspotEntity, HotspotPrimitive, MaterialProperties, ModelEntity, ObjectAnimationOptions, ObjectAnimationState, ObjectAppearance, PointCloudEntity, SceneDescription, SceneObjectDefinition, SceneTransform, SceneTransformSnapshot, SplatEntity, SpotAppearance, SpotDefinition, WorldBackground } from '../types/SceneTypes';
 import { EntityManager } from '../managers/EntityManager';
 import { ModelLoader } from '../loaders/ModelLoader';
 import { Trackball, type TrackballChangeListener, type TrackballMode, type TrackballStatus, type ViewDirection, type Viewpoint } from '../controls/Trackball';
@@ -856,13 +856,14 @@ function validateCameraProjection(projection: CameraProjection): void {
   validateCameraClipping(projection.near, projection.far);
 }
 
-function toObjectEntity(id: string, definition: SceneObjectDefinition): ModelEntity | SplatEntity | GeometryEntity {
+function toObjectEntity(id: string, definition: SceneObjectDefinition): ModelEntity | PointCloudEntity | SplatEntity | GeometryEntity {
   assertTransformMode(definition);
   const { file, geometry, material, type, ...rest } = definition;
   if (file && geometry) throw new Error(`Object "${id}" specifies both "file" and "geometry"; only one is allowed.`);
   if (geometry) return { id, type: 'geometry', geometry, material, ...rest };
   if (!file) throw new Error(`Object "${id}" must specify either "file" or "geometry".`);
   if (type === 'splat') return { id, type, file, ...rest };
+  if (type === 'pointcloud') return { id, type, file, material: isMaterialProperties(material) ? material : undefined, ...rest };
   return { id, type: 'model', file, material: isMaterialProperties(material) ? material : undefined, ...rest };
 }
 

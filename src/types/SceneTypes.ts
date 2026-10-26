@@ -1,6 +1,6 @@
 import type * as THREE from 'three';
 
-export type EntityType = 'model' | 'splat' | 'hotspot' | 'geometry';
+export type EntityType = 'model' | 'pointcloud' | 'splat' | 'hotspot' | 'geometry';
 export type ModelFormat = 'auto' | 'nxz' | 'nxs' | 'glb' | 'gltf' | 'ply' | 'obj' | 'stl';
 export type EntityBehaviorProfile = 'scene' | 'helper' | 'overlay' | 'interactive-helper';
 export type Vector3Tuple = [number, number, number];
@@ -139,9 +139,10 @@ export type HotspotPrimitive = 'sphere' | 'cube';
 
 /** Authoring shape for an entry of the "objects" block (keyed by id). Either `file` or `geometry` must be set. */
 export interface SceneObjectDefinition extends EntityVisuals, EntityTransform {
-  type?: 'model' | 'splat';
+  type?: 'model' | 'pointcloud' | 'splat';
   format?: ModelFormat;
   file?: string;
+  pointSize?: number;
   geometry?: THREE.BufferGeometry;
   material?: THREE.Material | MaterialProperties;
   materialFile?: string;
@@ -310,6 +311,18 @@ export interface ModelEntity extends EntityVisuals, EntityTransform {
   animation?: ObjectAnimationDefinition;
 }
 
+export interface PointCloudEntity extends EntityVisuals, EntityTransform {
+  id: string;
+  type: 'pointcloud';
+  format?: ModelFormat;
+  file: string;
+  pointSize?: number;
+  material?: MaterialProperties;
+  materialFile?: string;
+  materialPath?: string;
+  texture?: string;
+}
+
 export interface SplatEntity extends EntityTransform {
   id: string;
   type: 'splat';
@@ -335,4 +348,4 @@ export interface GeometryEntity extends EntityVisuals, EntityTransform {
   material?: THREE.Material | MaterialProperties;
 }
 
-export type EntityDefinition = (ModelEntity | SplatEntity | HotspotEntity | GeometryEntity) & Partial<EntityVisuals>;
+export type EntityDefinition = (ModelEntity | PointCloudEntity | SplatEntity | HotspotEntity | GeometryEntity) & Partial<EntityVisuals>;

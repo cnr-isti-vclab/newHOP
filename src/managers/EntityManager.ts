@@ -32,7 +32,7 @@ const ENTITY_BEHAVIOR_DEFAULTS: Record<EntityBehaviorProfile, NormalizedEntityPa
 };
 
 interface MaterialState {
-  mesh: THREE.Mesh;
+  mesh: THREE.Mesh | THREE.Points;
   original: THREE.Material[];
   normal: THREE.Material[];
   uniform?: THREE.Material[];
@@ -70,8 +70,8 @@ export class EntityManager {
       throw new Error(`An entity with id "${definition.id}" already exists.`);
     }
     assertTransformMode(definition);
-    const object = await (definition.type === 'model'
-      ? await this.modelLoader.load(definition.file, definition)
+    const object = await (definition.type === 'model' || definition.type === 'pointcloud'
+      ? await this.modelLoader.load(definition.file, { ...definition, pointCloud: definition.type === 'pointcloud' } satisfies ModelLoadDefinition)
       : definition.type === 'splat'
         ? this.modelLoader.loadSplat(definition.file)
       : definition.type === 'hotspot' && definition.file
@@ -283,7 +283,7 @@ export class EntityManager {
     const object = this.requireObject(id);
     const materials: THREE.Material[] = [];
     object.traverse((child) => {
-      if (!isMesh(child)) return;
+      if (!isRenderable(child)) return;
       materials.push(...(Array.isArray(child.material) ? child.material : [child.material]));
     });
     const definition = this.getDefinition(id);
@@ -319,7 +319,7 @@ export class EntityManager {
     const object = this.requireObject(id);
     const materials: THREE.Material[] = [];
     object.traverse((child) => {
-      if (!isMesh(child)) return;
+      if (!isRenderable(child)) return;
       materials.push(...(Array.isArray(child.material) ? child.material : [child.material]));
     });
     const definition = this.definitions.get(id);
@@ -528,7 +528,7 @@ function createEntityObject(entity: EntityDefinition): THREE.Object3D {
 
 function convertToShadeless(object: THREE.Object3D): void {
   object.traverse((child) => {
-    if (!isMesh(child)) return;
+    if (!isRenderable(child)) return;
     const sourceMaterials = Array.isArray(child.material) ? child.material : [child.material];
     const materials = sourceMaterials.map((source) => {
       const withColor = source as THREE.Material & { color?: THREE.Color; map?: THREE.Texture | null; wireframe?: boolean };
@@ -560,7 +560,7 @@ function isolateMaterials(object: THREE.Object3D, includeObjectVariants: boolean
   const states: MaterialState[] = [];
   const hasNexusVertexColors = object.userData.newHOPNexus?.mesh?.vertex?.color !== undefined;
   object.traverse((child) => {
-    if (!isMesh(child)) return;
+    if (!isRenderable(child)) return;
     const sourceMaterials = (Array.isArray(child.material) ? child.material : [child.material])
       .filter((material): material is THREE.Material => material !== undefined);
     const original = sourceMaterials.map((material) => {
@@ -590,8 +590,21 @@ function isolateMaterials(object: THREE.Object3D, includeObjectVariants: boolean
   return states;
 }
 
-function createShadelessMaterial(source: THREE.Material): THREE.MeshBasicMaterial {
+function createShadelessMaterial(source: THREE.Material): THREE.Material {
   const withColor = source as THREE.Material & { color?: THREE.Color; map?: THREE.Texture | null; wireframe?: boolean };
+  if (source instanceof THREE.PointsMaterial) {
+    return new THREE.PointsMaterial({
+      color: withColor.color?.getHex() ?? 0xffffff,
+      map: withColor.map ?? null,
+      vertexColors: source.vertexColors === true,
+      size: source.size,
+      sizeAttenuation: source.sizeAttenuation,
+      transparent: source.transparent,
+      opacity: source.opacity,
+      depthTest: source.depthTest,
+      depthWrite: source.depthWrite
+    });
+  }
   const material = new THREE.MeshBasicMaterial({
     color: withColor.color?.getHex() ?? 0xffffff,
     map: withColor.map ?? null,
@@ -646,7 +659,7 @@ function applyMaterialAppearance(source: THREE.Material, material: THREE.Materia
 }
 
 function hasObjectAppearance(definition: EntityDefinition): definition is EntityDefinition & { uniform?: boolean; shadeless?: boolean } {
-  return definition.type === 'model' || definition.type === 'geometry';
+  return definition.type === 'model' || definition.type === 'pointcloud' || definition.type === 'geometry';
 }
 
 function applyMaterialProperties(material: THREE.Material, properties: MaterialProperties): void {
@@ -706,7 +719,7 @@ function applyShadowFlags(object: THREE.Object3D): void {
 
 function disposeObject(object: THREE.Object3D): void {
   object.traverse((child) => {
-    if (isMesh(child)) {
+    if (isRenderable(child)) {
       child.geometry.dispose();
       const materials = Array.isArray(child.material) ? child.material : [child.material];
       materials.forEach((material) => material.dispose());
@@ -756,4 +769,8 @@ function toThreeLoopMode(mode: AnimationLoopMode): THREE.AnimationActionLoopStyl
 
 function isMesh(object: THREE.Object3D): object is THREE.Mesh {
   return (object as THREE.Object3D & { isMesh?: boolean }).isMesh === true;
+}
+
+function isRenderable(object: THREE.Object3D): object is THREE.Mesh | THREE.Points {
+  return isMesh(object) || object instanceof THREE.Points;
 }

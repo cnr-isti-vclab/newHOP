@@ -11,6 +11,8 @@ import { SplatMesh } from '@sparkjsdev/spark';
 import type { ModelFormat } from '../types/SceneTypes';
 export interface ModelLoadDefinition {
   format?: ModelFormat;
+  pointCloud?: boolean;
+  pointSize?: number;
   alpha?: number;
   doubleSided?: boolean;
   materialFile?: string;
@@ -26,6 +28,10 @@ export interface ModelLoadDefaults {
 export const MODEL_LOAD_DEFAULTS = {
   format: 'auto'
 } as const satisfies ModelLoadDefaults;
+
+export const POINT_CLOUD_DEFAULTS = {
+  pointSize: 0.01
+} as const;
 
 const nexusCache = (NexusModule as unknown as { Cache: { cortopath: string } }).Cache;
 
@@ -56,17 +62,17 @@ export class ModelLoader {
     const url = this.resolveUrl(file);
     const format = resolveFormat(url, definition.format ?? MODEL_LOAD_DEFAULTS.format);
     if (format === 'nxz' || format === 'nxs') {
-      return this.loadUncached(url, definition, format);
+      return this.loadUncached(url, definition, format).then((object) => finalizeLoadedObject(object, format, definition));
     }
     const cacheKey = createCacheKey(url, format, definition);
     const cached = this.cache.get(cacheKey);
-    if (cached) return cached.then((object) => cloneLoadedObject(object, format));
+    if (cached) return cached.then((object) => finalizeLoadedObject(object, format, definition));
     const loading = this.loadUncached(url, definition, format);
     this.cache.set(cacheKey, loading);
     loading.catch(() => {
       if (this.cache.get(cacheKey) === loading) this.cache.delete(cacheKey);
     });
-    return loading.then((object) => cloneLoadedObject(object, format));
+    return loading.then((object) => finalizeLoadedObject(object, format, definition));
   }
 
   clearCache(): void {
@@ -186,6 +192,55 @@ function cloneLoadedObject(object: THREE.Object3D, format: string): THREE.Object
     clone.userData.newHOPAnimations = object.userData.newHOPAnimations;
   }
   return clone;
+}
+
+function finalizeLoadedObject(object: THREE.Object3D, format: string, definition: ModelLoadDefinition): THREE.Object3D {
+  const clone = cloneLoadedObject(object, format);
+  return definition.pointCloud ? convertToPointCloud(clone, definition.pointSize ?? POINT_CLOUD_DEFAULTS.pointSize) : clone;
+}
+
+function convertToPointCloud(object: THREE.Object3D, pointSize: number): THREE.Object3D {
+  const size = Number.isFinite(pointSize) ? Math.max(pointSize, 0.000001) : POINT_CLOUD_DEFAULTS.pointSize;
+  if (object instanceof THREE.Mesh) return createPoints(object, size);
+
+  const meshes: THREE.Mesh[] = [];
+  object.traverse((child) => {
+    if (child instanceof THREE.Mesh) meshes.push(child);
+  });
+  for (const mesh of meshes) {
+    const parent = mesh.parent;
+    if (!parent) continue;
+    const points = createPoints(mesh, size);
+    parent.add(points);
+    parent.remove(mesh);
+  }
+  return object;
+}
+
+function createPoints(mesh: THREE.Mesh, pointSize: number): THREE.Points {
+  mesh.geometry.setIndex(null);
+  const source = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
+  const sourceWithColor = source as THREE.Material & { color?: THREE.Color; map?: THREE.Texture | null };
+  const material = new THREE.PointsMaterial({
+    color: sourceWithColor.color?.getHex() ?? 0xffffff,
+    map: sourceWithColor.map ?? null,
+    vertexColors: mesh.geometry.getAttribute('color') !== undefined,
+    size: pointSize,
+    transparent: source.transparent,
+    opacity: source.opacity,
+    depthTest: source.depthTest,
+    depthWrite: source.depthWrite
+  });
+  const points = new THREE.Points(mesh.geometry, material);
+  points.name = mesh.name;
+  points.userData = mesh.userData;
+  points.position.copy(mesh.position);
+  points.quaternion.copy(mesh.quaternion);
+  points.scale.copy(mesh.scale);
+  points.matrix.copy(mesh.matrix);
+  points.matrixAutoUpdate = mesh.matrixAutoUpdate;
+  while (mesh.children.length > 0) points.add(mesh.children[0]);
+  return points;
 }
 
 function createCacheKey(url: string, format: string, definition: ModelLoadDefinition): string {
