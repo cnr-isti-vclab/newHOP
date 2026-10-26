@@ -1,6 +1,7 @@
 import type * as THREE from 'three';
 
 export type EntityType = 'model' | 'splat' | 'hotspot' | 'geometry';
+export type ModelFormat = 'auto' | 'nxz' | 'nxs' | 'glb' | 'gltf' | 'ply' | 'obj' | 'stl';
 export type EntityBehaviorProfile = 'scene' | 'helper' | 'overlay' | 'interactive-helper';
 export type Vector3Tuple = [number, number, number];
 /** Euler rotation in degrees for scene authoring. Three.js runtime rotations remain radians. */
@@ -139,6 +140,7 @@ export type HotspotPrimitive = 'sphere' | 'cube';
 /** Authoring shape for an entry of the "objects" block (keyed by id). Either `file` or `geometry` must be set. */
 export interface SceneObjectDefinition extends EntityVisuals, EntityTransform {
   type?: 'model' | 'splat';
+  format?: ModelFormat;
   file?: string;
   geometry?: THREE.BufferGeometry;
   material?: THREE.Material | MaterialProperties;
@@ -151,16 +153,10 @@ export interface SceneObjectDefinition extends EntityVisuals, EntityTransform {
 /** Authoring shape for an entry of the "spots" block (keyed by id). */
 export interface SpotDefinition extends SpotVisuals, EntityTransform {
   primitive?: HotspotPrimitive;
+  format?: ModelFormat;
   file?: string;
   geometry?: THREE.BufferGeometry;
   size?: number;
-}
-
-/** General viewer behavior, independent of the 3D content being shown. */
-export interface ViewerConfig {
-  antialias?: boolean;
-  alpha?: boolean;
-  shadows?: boolean;
 }
 
 /** 3D environment properties: background, camera, and similar world-level settings. */
@@ -260,7 +256,6 @@ export interface HelperDefinition {
 }
 
 export interface SceneDescription {
-  config?: ViewerConfig;
   world?: WorldConfig;
   navigation?: NavigationConfig;
   lighting?: SceneLightingDescription;
@@ -306,6 +301,7 @@ export interface SceneLightDefinition {
 export interface ModelEntity extends EntityVisuals, EntityTransform {
   id: string;
   type: 'model';
+  format?: ModelFormat;
   file: string;
   material?: MaterialProperties;
   materialFile?: string;
@@ -326,6 +322,7 @@ export interface HotspotEntity extends SpotVisuals, EntityTransform {
   id: string;
   type: 'hotspot';
   primitive: HotspotPrimitive;
+  format?: ModelFormat;
   file?: string;
   geometry?: THREE.BufferGeometry;
   size?: number;

@@ -71,7 +71,7 @@ presenter.removeObject('newMarker');</code></pre>
     <h3>Files</h3>
 
     <h4>Mesh and model formats</h4>
-    <p>Set <code>file</code> to load a model. Supported mesh and model formats are <code>.nxz</code>, <code>.nxs</code>, <code>.glb</code>, <code>.gltf</code>, <code>.ply</code>, <code>.obj</code>, and <code>.stl</code>. Loader-specific sidecar and texture options are available when the format supports them.</p>
+    <p>Set <code>file</code> to load a model. Supported mesh and model formats are <code>.nxz</code>, <code>.nxs</code>, <code>.glb</code>, <code>.gltf</code>, <code>.ply</code>, <code>.obj</code>, and <code>.stl</code>. The loader normally infers the format from the URL; set <code>format</code> explicitly when a server endpoint does not expose a filename extension. Loader-specific sidecar and texture options are available when the format supports them.</p>
     <pre><code>objects: {
   sculpture: {
     file: 'models/sculpture.obj',
@@ -84,11 +84,19 @@ presenter.removeObject('newMarker');</code></pre>
       <thead><tr><th>Property</th><th>Meaning</th><th>Default</th></tr></thead>
       <tbody>
         <tr><td><code>file</code></td><td>Model URL, relative to the page unless a loader base URL is configured.</td><td>Required for loaded models</td></tr>
+        <tr><td><code>format</code></td><td>Loader format, or <code>'auto'</code> to infer it from the URL: <code>'nxz'</code>, <code>'nxs'</code>, <code>'glb'</code>, <code>'gltf'</code>, <code>'ply'</code>, <code>'obj'</code>, or <code>'stl'</code>.</td><td><code>'auto'</code></td></tr>
         <tr><td><code>materialFile</code></td><td>Explicit OBJ material-library filename. OBJ otherwise discovers <code>mtllib</code>, then a same-basename <code>.mtl</code>.</td><td>Auto-discovered for OBJ when present</td></tr>
         <tr><td><code>materialPath</code></td><td>Base directory for an explicit OBJ material file and its sidecars.</td><td>OBJ file directory</td></tr>
         <tr><td><code>texture</code></td><td>Explicit PLY texture. PLY otherwise reads common texture-file comments from its header.</td><td>Header-discovered when available</td></tr>
       </tbody>
     </table>
+    <p>For an extensionless server endpoint, specify the format explicitly:</p>
+    <pre><code>objects: {
+  remoteModel: {
+    file: 'https://my.site.com/assets?file=33552_ll',
+    format: 'ply'
+  }
+}</code></pre>
 
     <h4>Gaussian-splat PLY</h4>
     <p>Gaussian-splat PLY files use a different PLY property schema from ordinary point-cloud or mesh PLY files. Set <code>type: 'splat'</code> to select the Gaussian-splat loader; omitting <code>type</code> treats the file as a regular mesh model.</p>

@@ -11,7 +11,6 @@ A single entity list would mix models, hotspots, helpers, world settings, and na
 
 Use named scene blocks:
 
-- `config`
 - `world`
 - `navigation`
 - `lighting`
@@ -26,4 +25,5 @@ Objects and spots are keyed collections and maintain separate semantics. Objects
 - Authoring pages can document each block independently.
 - Runtime managers can own focused responsibilities.
 - Shared visual and transform properties can be reused in TypeScript types without collapsing the blocks.
+- Renderer options such as antialiasing, alpha, and shadows remain `Presenter` constructor configuration rather than scene data.
 - New blocks should be introduced only when they clarify ownership or authoring intent.

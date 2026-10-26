@@ -44,8 +44,7 @@ The renderer enables antialiasing and shadow maps by default. Pass `shadows: fal
 
 Scene authoring is divided into named blocks:
 
-- `config`: general viewer behavior.
-  - `world`: background, camera, and optional authored-content transform.
+- `world`: background, camera, and optional authored-content transform.
 - `navigation`: turntable or full-sphere navigation configuration.
 - `lighting`: world lights and camera-relative flashlight.
 - `helpers`: axes, grid, and scene extent helpers.
@@ -126,7 +125,7 @@ The default elevation range is `[-90, 90]`. Elevation limits may include the exa
 
 ## Scene Loading
 
-Model formats currently supported by `ModelLoader` are Nexus (`.nxz`, `.nxs`), GLB/GLTF, PLY, OBJ, and STL. Nexus loads asynchronously and uses the Corto worker. Built libraries discover the worker beside their own script or module URL; during source-based Vite development, the worker is served at `/nexus3d/corto.em.js`. Objects with `type: 'splat'` use Spark's `SplatMesh` loader for Gaussian-splat PLY files; one shared `SparkRenderer` is added lazily to the scene. Splats retain object transforms, visibility, tags, scene bounds, and runtime removal, but do not participate in mesh material or GLB animation controls.
+Model formats currently supported by `ModelLoader` are Nexus (`.nxz`, `.nxs`), GLB/GLTF, PLY, OBJ, and STL. Authors can override URL-extension inference with the object or spot `format` property for extensionless endpoints; its default is `auto`. Nexus loads asynchronously and uses the Corto worker. Built libraries discover the worker beside their own script or module URL; during source-based Vite development, the worker is served at `/nexus3d/corto.em.js`. Objects with `type: 'splat'` use Spark's `SplatMesh` loader for Gaussian-splat PLY files; one shared `SparkRenderer` is added lazily to the scene. Splats retain object transforms, visibility, tags, scene bounds, and runtime removal, but do not participate in mesh material or GLB animation controls.
 
 GLB/GLTF animation clips are retained by name. Clips without a glTF name are exposed as `Animation 1`, `Animation 2`, and so on. Each animated object owns its `THREE.AnimationMixer`; the Presenter updates active mixers from render-loop delta time and disposes them with the object. Runtime controls include clip discovery, play, pause, resume, stop, and time-based scrubbing with `once`, `loop`, and `pingpong` modes. `getObjectAnimationTime()` and `onObjectAnimationUpdate()` expose effective clip time, including the corrected forward/reverse time mapping for pingpong playback. An object's `animation.clip` is optional for autoplay; when omitted, the first clip is selected.
 

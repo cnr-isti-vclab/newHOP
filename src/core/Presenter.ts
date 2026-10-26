@@ -278,7 +278,11 @@ export class Presenter {
   clearScene(): void {
     this.objectManager.clear();
     this.spotManager.clear();
-    this.helperRoot.clear();
+    for (const helper of [...this.helperRoot.children]) {
+      if (helper.userData.clippingPlaneHelper) continue;
+      this.helperRoot.remove(helper);
+      disposeObjectResources(helper);
+    }
     this.extentHelpers.clear();
     this.extentGrids.clear();
     resetTransform(this.root);
@@ -941,6 +945,20 @@ function resetTransform(object: THREE.Object3D): void {
   object.rotation.set(0, 0, 0);
   object.scale.set(1, 1, 1);
   object.updateMatrix();
+}
+
+function disposeObjectResources(object: THREE.Object3D): void {
+  const geometries = new Set<THREE.BufferGeometry>();
+  const materials = new Set<THREE.Material>();
+  object.traverse((child) => {
+    if ('geometry' in child && child.geometry instanceof THREE.BufferGeometry) geometries.add(child.geometry);
+    if (!('material' in child)) return;
+    const material = child.material;
+    if (Array.isArray(material)) material.forEach((entry) => materials.add(entry));
+    else if (material instanceof THREE.Material) materials.add(material);
+  });
+  for (const geometry of geometries) geometry.dispose();
+  for (const material of materials) material.dispose();
 }
 
 function applyScale(object: THREE.Object3D, scale: EntityTransform['scale']): void {

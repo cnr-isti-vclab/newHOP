@@ -2,8 +2,8 @@ export * as THREE from 'three';
 export { VERSION } from './version';
 export { Presenter } from './core/Presenter';
 export type { PresenterConfig, SceneReadyListener, SpotClickEvent, SpotClickListener } from './core/Presenter';
-export { ModelLoader } from './loaders/ModelLoader';
-export type { ModelLoaderConfig } from './loaders/ModelLoader';
+export { MODEL_LOAD_DEFAULTS, ModelLoader } from './loaders/ModelLoader';
+export type { ModelLoadDefinition, ModelLoadDefaults, ModelLoaderConfig } from './loaders/ModelLoader';
 export { EntityManager } from './managers/EntityManager';
 export { MeasurementManager } from './managers/MeasurementManager';
 export { PickingManager } from './managers/PickingManager';
@@ -75,13 +75,13 @@ export type {
   UpAxis,
   Matrix4Tuple,
   MaterialProperties,
+  ModelFormat,
   ObjectAnimationDefinition,
   ObjectAnimationOptions,
   ObjectAnimationState,
   SpotVisuals,
   SpotAppearance,
   ObjectAppearance,
-  ViewerConfig,
   WorldBackground,
   WorldBackgroundColor,
   WorldBackgroundImage,

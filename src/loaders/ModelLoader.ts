@@ -8,7 +8,9 @@ import { Nexus3D } from 'nexus3d';
 import * as NexusModule from 'nexus3d';
 import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js';
 import { SplatMesh } from '@sparkjsdev/spark';
+import type { ModelFormat } from '../types/SceneTypes';
 export interface ModelLoadDefinition {
+  format?: ModelFormat;
   alpha?: number;
   doubleSided?: boolean;
   materialFile?: string;
@@ -16,6 +18,14 @@ export interface ModelLoadDefinition {
   texture?: string;
   transparent?: boolean;
 }
+
+export interface ModelLoadDefaults {
+  format: ModelFormat;
+}
+
+export const MODEL_LOAD_DEFAULTS = {
+  format: 'auto'
+} as const satisfies ModelLoadDefaults;
 
 const nexusCache = (NexusModule as unknown as { Cache: { cortopath: string } }).Cache;
 
@@ -44,15 +54,19 @@ export class ModelLoader {
 
   load(file: string, definition: ModelLoadDefinition = {}): Promise<THREE.Object3D> {
     const url = this.resolveUrl(file);
-    const extension = getExtension(url);
-    if (extension === 'nxz' || extension === 'nxs') {
-      return this.loadUncached(url, definition);
+    const format = resolveFormat(url, definition.format ?? MODEL_LOAD_DEFAULTS.format);
+    if (format === 'nxz' || format === 'nxs') {
+      return this.loadUncached(url, definition, format);
     }
-    const cached = this.cache.get(url);
-    if (cached) return cached.then((object) => cloneLoadedObject(object, extension));
-    const loading = this.loadUncached(url, definition);
-    this.cache.set(url, loading);
-    return loading.then((object) => cloneLoadedObject(object, extension));
+    const cacheKey = createCacheKey(url, format, definition);
+    const cached = this.cache.get(cacheKey);
+    if (cached) return cached.then((object) => cloneLoadedObject(object, format));
+    const loading = this.loadUncached(url, definition, format);
+    this.cache.set(cacheKey, loading);
+    loading.catch(() => {
+      if (this.cache.get(cacheKey) === loading) this.cache.delete(cacheKey);
+    });
+    return loading.then((object) => cloneLoadedObject(object, format));
   }
 
   clearCache(): void {
@@ -65,9 +79,8 @@ export class ModelLoader {
     return mesh;
   }
 
-  private async loadUncached(url: string, definition: ModelLoadDefinition): Promise<THREE.Object3D> {
-    const extension = getExtension(url);
-    if (extension === 'nxz' || extension === 'nxs') {
+  private async loadUncached(url: string, definition: ModelLoadDefinition, format = resolveFormat(url, definition.format ?? MODEL_LOAD_DEFAULTS.format)): Promise<THREE.Object3D> {
+    if (format === 'nxz' || format === 'nxs') {
       return new Promise<THREE.Object3D>((resolve, reject) => {
         let nexus: Nexus3D;
         try {
@@ -92,13 +105,13 @@ export class ModelLoader {
         }
       });
     }
-    if (extension === 'glb' || extension === 'gltf') {
+    if (format === 'glb' || format === 'gltf') {
       const result = await new GLTFLoader().loadAsync(url);
       applyMaterialOverrides(result.scene, definition);
       result.scene.userData.newHOPAnimations = result.animations;
       return result.scene;
     }
-    if (extension === 'ply') {
+    if (format === 'ply') {
       const response = await fetch(url);
       if (!response.ok) throw new Error(`Unable to load PLY model: ${response.status} ${response.statusText}`);
       const data = await response.arrayBuffer();
@@ -121,7 +134,7 @@ export class ModelLoader {
         opacity: definition.alpha ?? 1
       }));
     }
-    if (extension === 'obj') {
+    if (format === 'obj') {
       const loader = new OBJLoader();
       const objDirectory = getDirectoryUrl(url);
       const objFile = getFileName(url);
@@ -138,11 +151,12 @@ export class ModelLoader {
         loader.setMaterials(loadedMaterials);
       }
       loader.setPath(objDirectory);
-      const object = await loader.loadAsync(objFile);
+      const objectUrl = new URL(url).search || new URL(url).hash ? url : objFile;
+      const object = await loader.loadAsync(objectUrl);
       applyMaterialOverrides(object, definition, true);
       return object;
     }
-    if (extension === 'stl') {
+    if (format === 'stl') {
       const geometry = await new STLLoader().loadAsync(url);
       geometry.computeVertexNormals();
       return new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({
@@ -153,7 +167,7 @@ export class ModelLoader {
         opacity: definition.alpha ?? 1
       }));
     }
-    throw new Error(`Unsupported model format: .${extension || 'unknown'}`);
+    throw new Error(`Unsupported model format: .${format || 'unknown'}`);
   }
 
   private resolveUrl(file: string): string {
@@ -161,12 +175,34 @@ export class ModelLoader {
   }
 }
 
-function cloneLoadedObject(object: THREE.Object3D, extension: string): THREE.Object3D {
-  const clone = extension === 'glb' || extension === 'gltf' ? cloneSkinned(object) : object.clone(true);
-  if (extension === 'glb' || extension === 'gltf') {
+function cloneLoadedObject(object: THREE.Object3D, format: string): THREE.Object3D {
+  const clone = format === 'glb' || format === 'gltf' ? cloneSkinned(object) : object.clone(true);
+  clone.traverse((child) => {
+    if ('geometry' in child && child.geometry instanceof THREE.BufferGeometry) {
+      child.geometry = child.geometry.clone();
+    }
+  });
+  if (format === 'glb' || format === 'gltf') {
     clone.userData.newHOPAnimations = object.userData.newHOPAnimations;
   }
   return clone;
+}
+
+function createCacheKey(url: string, format: string, definition: ModelLoadDefinition): string {
+  return JSON.stringify([
+    url,
+    format,
+    definition.alpha,
+    definition.doubleSided,
+    definition.materialFile,
+    definition.materialPath,
+    definition.texture,
+    definition.transparent
+  ]);
+}
+
+function resolveFormat(url: string, format: ModelFormat | undefined): string {
+  return format === undefined || format === 'auto' ? getExtension(url) : format;
 }
 
 function getExtension(url: string): string {

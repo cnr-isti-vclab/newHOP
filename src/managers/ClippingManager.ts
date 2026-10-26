@@ -251,6 +251,7 @@ function createPlaneOutline(color: number): THREE.Group {
   );
   helper.add(surface);
   helper.userData.clippingExcluded = true;
+  helper.userData.clippingPlaneHelper = true;
   return helper;
 }
 

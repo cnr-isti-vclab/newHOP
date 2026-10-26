@@ -183,7 +183,7 @@ export class Trackball {
     this.element.addEventListener('pointerdown', this.onPointerDown);
     this.element.addEventListener('pointermove', this.onPointerMove);
     this.element.addEventListener('pointerup', this.onPointerUp);
-    this.element.addEventListener('pointercancel', this.onPointerUp);
+    this.element.addEventListener('pointercancel', this.onPointerCancel);
     this.element.addEventListener('wheel', this.onWheel, { passive: false });
     this.element.addEventListener('contextmenu', this.onContextMenu);
     if (this.mode === 'sphere') {
@@ -653,7 +653,7 @@ export class Trackball {
     this.element.removeEventListener('pointerdown', this.onPointerDown);
     this.element.removeEventListener('pointermove', this.onPointerMove);
     this.element.removeEventListener('pointerup', this.onPointerUp);
-    this.element.removeEventListener('pointercancel', this.onPointerUp);
+    this.element.removeEventListener('pointercancel', this.onPointerCancel);
     this.element.removeEventListener('wheel', this.onWheel);
     this.element.removeEventListener('contextmenu', this.onContextMenu);
     this.changeListeners.clear();
@@ -739,6 +739,10 @@ export class Trackball {
     this.dragging = false;
     this.rightButtonActive = false;
     this.pointerId = -1;
+  };
+
+  private readonly onPointerCancel = (event: PointerEvent): void => {
+    this.onPointerUp(event);
   };
 
   private readonly onWheel = (event: WheelEvent): void => {

@@ -153,7 +153,7 @@ export class MeasurementManager {
   }
 
   reset(): void {
-    this.visualGroup.clear();
+    this.disposeVisuals();
     this.points.length = 0;
     this.hasCompletedMeasurement = false;
     this.pendingPointer = undefined;
@@ -282,5 +282,22 @@ export class MeasurementManager {
     this.listeners.clear();
     this.onComplete = undefined;
     this.root.remove(this.visualGroup);
+  }
+
+  private disposeVisuals(): void {
+    const geometries = new Set<THREE.BufferGeometry>();
+    const materials = new Set<THREE.Material>();
+    for (const child of [...this.visualGroup.children]) {
+      child.traverse((object) => {
+        if ('geometry' in object && object.geometry instanceof THREE.BufferGeometry) geometries.add(object.geometry);
+        if (!('material' in object)) return;
+        const material = object.material;
+        if (Array.isArray(material)) material.forEach((entry) => materials.add(entry));
+        else if (material instanceof THREE.Material) materials.add(material);
+      });
+      this.visualGroup.remove(child);
+    }
+    for (const geometry of geometries) geometry.dispose();
+    for (const material of materials) material.dispose();
   }
 }

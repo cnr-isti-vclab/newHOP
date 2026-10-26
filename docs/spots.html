@@ -71,6 +71,7 @@
       <tbody>
         <tr><td><code>primitive</code></td><td>Built-in hotspot form: <code>sphere</code> or <code>cube</code>.</td><td>Identifier</td><td>Required unless <code>file</code> or <code>geometry</code> is supplied</td></tr>
         <tr><td><code>file</code></td><td>Custom PLY or OBJ hotspot source. The loaded materials are converted to unlit spot materials.</td><td>URL</td><td>None</td></tr>
+        <tr><td><code>format</code></td><td>Loader format for a file-backed spot, or <code>'auto'</code> to infer it from the URL. Use an explicit format for extensionless endpoints.</td><td>Identifier</td><td><code>'auto'</code></td></tr>
         <tr><td><code>geometry</code></td><td>Custom Three.js buffer geometry for the hotspot.</td><td>BufferGeometry</td><td>None</td></tr>
         <tr><td><code>size</code></td><td>Sphere diameter or cube side length.</td><td>Scene units</td><td><code>0.06</code></td></tr>
         <tr><td><code>position</code></td><td>Spot translation.</td><td>Scene units</td><td><code>[0, 0, 0]</code></td></tr>
