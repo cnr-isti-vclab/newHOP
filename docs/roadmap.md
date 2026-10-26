@@ -12,6 +12,7 @@ This is a working plan, not a promise of release dates. Keep entries small enoug
 - World content transforms align authored entities without rotating the navigation/reference frame.
 - Model loading supports Nexus, GLB/GLTF, PLY, OBJ, and STL.
 - GLB/GLTF clips are retained by name, with per-object playback, pause/resume/stop, declaration-time autoplay, time-based scrubbing, and frame-accurate playback-state listeners.
+- Helpers support explicit world-space placement; fixed-position grids no longer follow scene-bound refreshes.
 - Static HTML documentation covers navigation, objects, and spots.
 - Static HTML documentation includes an Interaction reference covering tool ownership and the intended picking and click contracts.
 - The basic Toolbar includes an optional `pickpoint` control with an attached object ID and coordinate readout.
@@ -31,6 +32,7 @@ This is a working plan, not a promise of release dates. Keep entries small enoug
 
 - Document and validate the remaining `world` and `lighting` properties.
 - Document helpers and their scene-extent behavior.
+- Extend explicit placement controls consistently across helper types and clarify which helpers follow scene bounds.
 - Design a top-level `config` block for viewer behavior and presentation, distinct from the scene content managed by the viewer. Define ownership for renderer and shadow policy, measurement and picking appearance, and optional UI behavior; keep the public schema capability-oriented rather than exposing arbitrary Three.js properties.
 - Decide which viewer settings belong in `Presenter` construction, scene loading, or runtime methods, and consider an explicitly advanced Three.js escape hatch only after the stable configuration surface is defined.
 - Decide how remaining reserved visual flags such as `clippable` and `measurable` should become operational.

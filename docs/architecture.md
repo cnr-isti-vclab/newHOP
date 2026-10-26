@@ -130,6 +130,8 @@ Model formats currently supported by `ModelLoader` are Nexus (`.nxz`, `.nxs`), G
 
 GLB/GLTF animation clips are retained by name. Clips without a glTF name are exposed as `Animation 1`, `Animation 2`, and so on. Each animated object owns its `THREE.AnimationMixer`; the Presenter updates active mixers from render-loop delta time and disposes them with the object. Runtime controls include clip discovery, play, pause, resume, stop, and time-based scrubbing with `once`, `loop`, and `pingpong` modes. `getObjectAnimationTime()` and `onObjectAnimationUpdate()` expose effective clip time, including the corrected forward/reverse time mapping for pingpong playback. An object's `animation.clip` is optional for autoplay; when omitted, the first clip is selected.
 
+Grid helpers follow the scene extent by default, placing their plane at the scene's minimum vertical coordinate and scaling it to the loaded bounds. Supplying an explicit helper `position` makes the grid fixed in world space, preserves its declared size and spacing, and prevents later scene-bound refreshes from relocating or rescaling it.
+
 Scene objects and spots are loaded concurrently. This prevents a slow Nexus stream from blocking other models, spots, or helpers from appearing. Explicit navigation home views are applied before entity loading completes, so a scene can present its authored camera immediately while model bounds continue to arrive.
 
 Applications can subscribe to final scene readiness with `presenter.onSceneReady(listener)`. The listener runs once after all entity loads finish, final scene bounds are computed, and the final home view is applied. The returned function removes the listener. The `setScene()` promise remains available for one-shot `await`-based loading flows.

@@ -52,7 +52,7 @@ export class Presenter {
   private readonly pickingOverlayRoot = new THREE.Group();
   private readonly navigationOverlayRoot = new THREE.Group();
   private readonly extentHelpers = new Set<THREE.Box3Helper>();
-  private readonly extentGrids = new Map<THREE.GridHelper, { minimumSize: number; initialSize: number }>();
+  private readonly extentGrids = new Map<THREE.GridHelper, { minimumSize: number; initialSize: number; followSceneExtent: boolean }>();
   private backgroundTexture?: THREE.Texture;
   private readonly sceneReadyListeners = new Set<SceneReadyListener>();
   private readonly objectManager: EntityManager;
@@ -467,7 +467,8 @@ export class Presenter {
         break;
       }
       case 'grid': {
-        const sceneExtent = this.sceneBounds.isEmpty()
+        const followSceneExtent = definition.position === undefined;
+        const sceneExtent = !followSceneExtent || this.sceneBounds.isEmpty()
           ? size
           : Math.max(this.sceneBounds.getSize(new THREE.Vector3()).length() * 1.5, size);
         const gridSize = Math.max(sceneExtent, 0.01);
@@ -477,12 +478,16 @@ export class Presenter {
         const material = grid.material as THREE.Material & { transparent?: boolean; opacity?: number };
         material.transparent = true;
         material.opacity = opacity;
-        if (!this.sceneBounds.isEmpty()) {
+        if (followSceneExtent && !this.sceneBounds.isEmpty()) {
           if (this.trackball.getUpAxis() === 'y') grid.position.y = this.sceneBounds.min.y;
           else grid.position.z = this.sceneBounds.min.z;
         }
         grid.name = id;
-        this.extentGrids.set(grid, { minimumSize: size, initialSize: gridSize });
+        this.extentGrids.set(grid, {
+          minimumSize: size,
+          initialSize: gridSize,
+          followSceneExtent
+        });
         helper = grid;
         break;
       }
@@ -525,6 +530,7 @@ export class Presenter {
     if (this.sceneBounds.isEmpty()) return;
     for (const helper of this.extentHelpers) helper.box.copy(this.sceneBounds);
     for (const [grid, config] of this.extentGrids) {
+      if (!config.followSceneExtent) continue;
       const sceneExtent = Math.max(this.sceneBounds.getSize(new THREE.Vector3()).length() * 1.5, config.minimumSize);
       const gridSize = Math.max(sceneExtent, 0.01);
       const scale = gridSize / config.initialSize;
