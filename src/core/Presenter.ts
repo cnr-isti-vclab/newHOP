@@ -483,8 +483,12 @@ export class Presenter {
         material.transparent = true;
         material.opacity = opacity;
         if (followSceneExtent && !this.sceneBounds.isEmpty()) {
-          if (this.trackball.getUpAxis() === 'y') grid.position.y = this.sceneBounds.min.y;
-          else grid.position.z = this.sceneBounds.min.z;
+          const center = this.sceneBounds.getCenter(new THREE.Vector3());
+          if (this.trackball.getUpAxis() === 'y') {
+            grid.position.set(center.x, this.sceneBounds.min.y, center.z);
+          } else {
+            grid.position.set(center.x, center.y, this.sceneBounds.min.z);
+          }
         }
         grid.name = id;
         this.extentGrids.set(grid, {
@@ -540,10 +544,11 @@ export class Presenter {
       const scale = gridSize / config.initialSize;
       grid.scale.x = scale;
       grid.scale.z = scale;
+      const center = this.sceneBounds.getCenter(new THREE.Vector3());
       if (this.trackball.getUpAxis() === 'y') {
-        grid.position.y = this.sceneBounds.min.y;
+        grid.position.set(center.x, this.sceneBounds.min.y, center.z);
       } else {
-        grid.position.z = this.sceneBounds.min.z;
+        grid.position.set(center.x, center.y, this.sceneBounds.min.z);
       }
     }
   }

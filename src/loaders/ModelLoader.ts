@@ -8,7 +8,10 @@ import { Nexus3D } from 'nexus3d';
 import * as NexusModule from 'nexus3d';
 import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js';
 import { SplatMesh } from '@sparkjsdev/spark';
-import type { ModelFormat } from '../types/SceneTypes';
+import { load } from '@loaders.gl/core';
+import { LASLoader } from '@loaders.gl/las';
+import { convertE57ToXyz } from './E57Decoder';
+import type { MaterialProperties, ModelFormat } from '../types/SceneTypes';
 export interface ModelLoadDefinition {
   format?: ModelFormat;
   pointCloud?: boolean;
@@ -19,6 +22,7 @@ export interface ModelLoadDefinition {
   materialPath?: string;
   texture?: string;
   transparent?: boolean;
+  material?: MaterialProperties;
 }
 
 export interface ModelLoadDefaults {
@@ -33,7 +37,11 @@ export const POINT_CLOUD_DEFAULTS = {
   pointSize: 0.01
 } as const;
 
-const nexusCache = (NexusModule as unknown as { Cache: { cortopath: string } }).Cache;
+const nexusCache = (NexusModule as unknown as {
+  Cache: {
+    cortopath: string;
+  };
+}).Cache;
 
 declare const __NEWHOP_LIBRARY_URL__: string | undefined;
 
@@ -56,6 +64,7 @@ export class ModelLoader {
     this.renderer = config.renderer;
     this.baseUrl = config.baseUrl;
     nexusCache.cortopath = nexusWorkerDirectory;
+    patchNexusTextureUnitBinding(this.renderer);
   }
 
   load(file: string, definition: ModelLoadDefinition = {}): Promise<THREE.Object3D> {
@@ -91,15 +100,9 @@ export class ModelLoader {
         let nexus: Nexus3D;
         try {
           nexus = new Nexus3D(url, this.renderer, {
-            material: new THREE.MeshStandardMaterial({
-              roughness: 0.55,
-              metalness: 0,
-              side: toMaterialSide(definition.doubleSided, true),
-              transparent: definition.transparent ?? isTranslucent(definition),
-              opacity: definition.alpha ?? 1,
-              depthWrite: true
-            }),
+            material: createNexusMaterial(definition),
             onLoad: (loadedNexus: Nexus3D) => {
+              normalizeNexusTexture(loadedNexus);
               normalizeNexusColorAttribute(loadedNexus);
               loadedNexus.userData.newHOPNexus = loadedNexus;
               resolve(loadedNexus);
@@ -139,6 +142,31 @@ export class ModelLoader {
         transparent: definition.transparent ?? isTranslucent(definition),
         opacity: definition.alpha ?? 1
       }));
+    }
+    if (format === 'las' || format === 'laz') {
+      const data = await load(url, LASLoader, {
+        las: {
+          shape: 'mesh',
+          fp64: false,
+          skip: 1,
+          colorDepth: 8
+        }
+      });
+      const geometry = new THREE.BufferGeometry();
+      const positions = data.attributes.POSITION;
+      if (!positions) throw new Error('LAS/LAZ data did not contain positions.');
+      geometry.setAttribute('position', new THREE.BufferAttribute(positions.value, positions.size));
+      const colors = data.attributes.COLOR_0;
+      if (colors) {
+        geometry.setAttribute('color', new THREE.BufferAttribute(colors.value, colors.size, colors.normalized ?? false));
+      }
+      return createPointCloudMesh(geometry, colors !== undefined);
+    }
+    if (format === 'e57') {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(`Unable to load E57 point cloud: ${response.status} ${response.statusText}`);
+      const converted = await convertE57ToXyz(new Uint8Array(await response.arrayBuffer()));
+      return createPointCloudMesh(parseE57Geometry(converted));
     }
     if (format === 'obj') {
       const loader = new OBJLoader();
@@ -181,7 +209,36 @@ export class ModelLoader {
   }
 }
 
+function createNexusMaterial(definition: ModelLoadDefinition): THREE.MeshStandardMaterial | THREE.MeshLambertMaterial {
+  const options = {
+    side: toMaterialSide(definition.doubleSided, true),
+    transparent: definition.transparent ?? isTranslucent(definition),
+    opacity: definition.alpha ?? 1,
+    depthWrite: true
+  };
+  if (definition.material?.specularIntensity === 0) return new THREE.MeshLambertMaterial(options);
+  return new THREE.MeshStandardMaterial({
+    ...options,
+    roughness: 1,
+    metalness: 0
+  });
+}
+
+function patchNexusTextureUnitBinding(renderer: THREE.WebGLRenderer): void {
+  const context = renderer.getContext() as WebGLRenderingContext & {
+    __newHOPNexusTextureUnitPatched?: boolean;
+  };
+  if (context.__newHOPNexusTextureUnitPatched) return;
+
+  const activeTexture = context.activeTexture.bind(context);
+  context.activeTexture = (textureUnit: GLenum): void => {
+    activeTexture(Number.isFinite(textureUnit) ? textureUnit : context.TEXTURE0);
+  };
+  context.__newHOPNexusTextureUnitPatched = true;
+}
+
 function cloneLoadedObject(object: THREE.Object3D, format: string): THREE.Object3D {
+  if (format === 'nxz' || format === 'nxs') return object;
   const clone = format === 'glb' || format === 'gltf' ? cloneSkinned(object) : object.clone(true);
   clone.traverse((child) => {
     if ('geometry' in child && child.geometry instanceof THREE.BufferGeometry) {
@@ -196,7 +253,44 @@ function cloneLoadedObject(object: THREE.Object3D, format: string): THREE.Object
 
 function finalizeLoadedObject(object: THREE.Object3D, format: string, definition: ModelLoadDefinition): THREE.Object3D {
   const clone = cloneLoadedObject(object, format);
-  return definition.pointCloud ? convertToPointCloud(clone, definition.pointSize ?? POINT_CLOUD_DEFAULTS.pointSize) : clone;
+  return (definition.pointCloud || isPointCloudFormat(format))
+    ? convertToPointCloud(clone, definition.pointSize ?? POINT_CLOUD_DEFAULTS.pointSize)
+    : clone;
+}
+
+function isPointCloudFormat(format: string): boolean {
+  return format === 'las' || format === 'laz' || format === 'e57';
+}
+
+function createPointCloudMesh(geometry: THREE.BufferGeometry, hasColors = false): THREE.Mesh {
+  return new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({
+    color: 0xffffff,
+    vertexColors: hasColors,
+    roughness: 0.55,
+    metalness: 0
+  }));
+}
+
+function parseE57Geometry(source: string): THREE.BufferGeometry {
+  const positions: number[] = [];
+  const colors: number[] = [];
+  const color = new THREE.Color();
+  for (const line of source.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+    const values = trimmed.split(/\s+/).map(Number);
+    if (values.length !== 3 && values.length !== 6) continue;
+    if (values.some((value) => !Number.isFinite(value))) continue;
+    positions.push(values[0], values[1], values[2]);
+    if (values.length === 6) {
+      color.setRGB(values[3] / 255, values[4] / 255, values[5] / 255).convertSRGBToLinear();
+      colors.push(color.r, color.g, color.b);
+    }
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  if (colors.length === positions.length) geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+  return geometry;
 }
 
 function convertToPointCloud(object: THREE.Object3D, pointSize: number): THREE.Object3D {
@@ -289,6 +383,23 @@ function normalizeNexusColorAttribute(object: Nexus3D): void {
   const color = object.geometry?.getAttribute('color');
   if (!color || color.itemSize !== 4) return;
   object.geometry.setAttribute('color', new THREE.BufferAttribute(new Float32Array(3), 3));
+}
+
+function normalizeNexusTexture(object: Nexus3D): void {
+  const nexus = object as Nexus3D & {
+    material_texture?: THREE.DataTexture;
+    updateMaterials?: () => void;
+  };
+  if (!nexus.material_texture || nexus.material_texture.format !== THREE.RGBFormat) return;
+  nexus.material_texture.dispose();
+  nexus.material_texture = new THREE.DataTexture(
+    new Uint8Array([255, 255, 255, 255]),
+    1,
+    1,
+    THREE.RGBAFormat
+  );
+  nexus.material_texture.needsUpdate = true;
+  nexus.updateMaterials?.();
 }
 
 function isTranslucent(definition: Pick<ModelLoadDefinition, 'alpha'>): boolean {

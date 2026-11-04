@@ -10,7 +10,7 @@ This is a working plan, not a promise of release dates. Keep entries small enoug
 - Navigation supports Y-up and Z-up scenes without rewriting authored mesh or entity coordinates.
 - Scene loading updates bounds and extent helpers incrementally, with a final `onSceneReady()` signal after all entities are ready.
 - World content transforms align authored entities without rotating the navigation/reference frame.
-- Model loading supports Nexus, GLB/GLTF, PLY, OBJ, and STL.
+- Model loading supports Nexus, GLB/GLTF, PLY, OBJ, STL, LAS, LAZ, and E57; LAS, LAZ, and E57 infer point-cloud rendering automatically.
 - GLB/GLTF clips are retained by name, with per-object playback, pause/resume/stop, declaration-time autoplay, time-based scrubbing, and frame-accurate playback-state listeners.
 - Helpers support explicit world-space placement; fixed-position grids no longer follow scene-bound refreshes.
 - Static HTML documentation covers navigation, objects, and spots.
@@ -36,6 +36,16 @@ This is a working plan, not a promise of release dates. Keep entries small enoug
 - Keep renderer options such as antialiasing, alpha, and shadows owned by `Presenter` construction; add scene-level viewer configuration only if a concrete authoring need establishes clear ownership.
 - Decide how remaining reserved visual flags such as `clippable` and `measurable` should become operational.
 - Extend runtime transform APIs only if later use cases require additional constraints or animation support.
+
+### NXS Loading and Rendering Rework
+
+- Replace the temporary NXS color/texture workaround with explicit material and attribute ownership. The current behavior intentionally allows only one color source at a time, gives texture data precedence, and supplies a placeholder color stream to avoid an empty data stream.
+- Define a stable boundary between Nexus progressive loading, its native WebGL rendering path, and Three.js renderer state, including texture-unit and texture-binding synchronization or a deliberately isolated render path.
+- Rework NXS material creation and runtime appearance updates for textured, vertex-colored, untextured, uniform-color, shadeless, transparent, and double-sided models without mutating format-owned data as a compatibility side effect.
+- Define NXS bounds semantics for progressive data, camera fitting, scene extents, clipping, picking, and measurement, documenting the conservative bounding-sphere limitation where no tighter format metadata is available.
+- Review NXS lifecycle ownership for concurrent loads, request cancellation, failed loads, repeated remove/reload, multiple instances, renderer disposal, texture disposal, and scene replacement.
+- Add browser regression scenes covering textured and untextured NXS files, color and no-color variants, multiple NXS instances, NXS mixed with textured Three.js assets, appearance toggles, transforms, fit-to-scene, and remove/reload behavior.
+- Keep the public model-loading and appearance documentation aligned with the final NXS ownership and rendering contract.
 
 ### Unified Entities and Procedural Geometry
 

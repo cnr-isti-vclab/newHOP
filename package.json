@@ -14,9 +14,12 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@loaders.gl/core": "^4.5.4",
+    "@loaders.gl/las": "^4.5.4",
     "@sparkjsdev/spark": "^2.2.0",
     "nexus3d": "1.0.10",
-    "three": ">=0.160.0"
+    "three": ">=0.160.0",
+    "web-e57": "^1.2.0"
   },
   "devDependencies": {
     "@types/node": "^26.4.1",

@@ -405,16 +405,18 @@ export class EntityManager {
     const bounds = new THREE.Box3();
     for (const [id, object] of this.objects) {
       if (!this.participation.get(id)?.bounds) continue;
-      bounds.union(new THREE.Box3().setFromObject(object));
+      const nexus = object.userData.newHOPNexus as { boundingSphere?: THREE.Sphere } | undefined;
+      if (nexus?.boundingSphere) {
+        const sphere = nexus.boundingSphere.clone().applyMatrix4(object.matrixWorld);
+        bounds.union(sphere.getBoundingBox(new THREE.Box3()));
+      } else {
+        bounds.union(new THREE.Box3().setFromObject(object));
+      }
       const splat = object as THREE.Object3D & { getBoundingBox?: () => THREE.Box3 };
       const splatBounds = splat.getBoundingBox?.();
       if (splatBounds && !splatBounds.isEmpty()) {
         bounds.union(splatBounds.clone().applyMatrix4(object.matrixWorld));
       }
-      const nexus = object.userData.newHOPNexus as { boundingSphere?: THREE.Sphere } | undefined;
-      if (!nexus?.boundingSphere) continue;
-      const sphere = nexus.boundingSphere.clone().applyMatrix4(object.matrixWorld);
-      bounds.union(sphere.getBoundingBox(new THREE.Box3()));
     }
     return bounds;
   }
@@ -558,7 +560,12 @@ function applyScale(object: THREE.Object3D, scale: EntityDefinition['scale']): v
 function isolateMaterials(object: THREE.Object3D, includeObjectVariants: boolean): MaterialState[] {
   const clones = new Map<THREE.Material, THREE.Material>();
   const states: MaterialState[] = [];
-  const hasNexusVertexColors = object.userData.newHOPNexus?.mesh?.vertex?.color !== undefined;
+  const nexusMesh = object.userData.newHOPNexus?.mesh as {
+    vertex?: { color?: object | null; texCoord?: object | null };
+    texturesCount?: number;
+  } | undefined;
+  const hasNexusTexture = nexusMesh?.vertex?.texCoord != null && (nexusMesh.texturesCount ?? 0) > 0;
+  const hasNexusVertexColors = nexusMesh?.vertex?.color != null;
   object.traverse((child) => {
     if (!isRenderable(child)) return;
     const sourceMaterials = (Array.isArray(child.material) ? child.material : [child.material])
@@ -571,8 +578,14 @@ function isolateMaterials(object: THREE.Object3D, includeObjectVariants: boolean
       }
       return clone;
     });
-    if (hasNexusVertexColors) {
-      original.forEach((material) => { material.vertexColors = true; });
+    if (nexusMesh) {
+      original.forEach((material) => {
+        material.vertexColors = hasNexusVertexColors;
+        if (hasNexusTexture) {
+          const withColor = material as THREE.Material & { color?: THREE.Color };
+          withColor.color?.setHex(0xffffff);
+        }
+      });
     }
     child.material = original.length === 1 ? original[0] : original;
     const state: MaterialState = {

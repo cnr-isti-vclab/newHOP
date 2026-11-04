@@ -71,7 +71,7 @@ presenter.removeObject('newMarker');</code></pre>
     <h3>Files</h3>
 
     <h4>Mesh and model formats</h4>
-    <p>Set <code>file</code> to load a model. Supported mesh and model formats are <code>.nxz</code>, <code>.nxs</code>, <code>.glb</code>, <code>.gltf</code>, <code>.ply</code>, <code>.obj</code>, and <code>.stl</code>. The loader normally infers the format from the URL; set <code>format</code> explicitly when a server endpoint does not expose a filename extension. Loader-specific sidecar and texture options are available when the format supports them.</p>
+    <p>Set <code>file</code> to load a model or point cloud. Supported formats are <code>.nxz</code>, <code>.nxs</code>, <code>.glb</code>, <code>.gltf</code>, <code>.ply</code>, <code>.obj</code>, <code>.stl</code>, <code>.las</code>, <code>.laz</code>, and <code>.e57</code>. The loader normally infers the format from the URL; set <code>format</code> explicitly when a server endpoint does not expose a filename extension. LAS, LAZ, and E57 are always rendered as point clouds; PLY remains a mesh unless <code>type: 'pointcloud'</code> is set.</p>
     <pre><code>objects: {
   sculpture: {
     file: 'models/sculpture.obj',
@@ -84,7 +84,7 @@ presenter.removeObject('newMarker');</code></pre>
       <thead><tr><th>Property</th><th>Meaning</th><th>Default</th></tr></thead>
       <tbody>
         <tr><td><code>file</code></td><td>Model URL, relative to the page unless a loader base URL is configured.</td><td>Required for loaded models</td></tr>
-        <tr><td><code>format</code></td><td>Loader format, or <code>'auto'</code> to infer it from the URL: <code>'nxz'</code>, <code>'nxs'</code>, <code>'glb'</code>, <code>'gltf'</code>, <code>'ply'</code>, <code>'obj'</code>, or <code>'stl'</code>.</td><td><code>'auto'</code></td></tr>
+        <tr><td><code>format</code></td><td>Loader format, or <code>'auto'</code> to infer it from the URL: <code>'nxz'</code>, <code>'nxs'</code>, <code>'glb'</code>, <code>'gltf'</code>, <code>'ply'</code>, <code>'obj'</code>, <code>'stl'</code>, <code>'las'</code>, <code>'laz'</code>, or <code>'e57'</code>.</td><td><code>'auto'</code></td></tr>
         <tr><td><code>materialFile</code></td><td>Explicit OBJ material-library filename. OBJ otherwise discovers <code>mtllib</code>, then a same-basename <code>.mtl</code>.</td><td>Auto-discovered for OBJ when present</td></tr>
         <tr><td><code>materialPath</code></td><td>Base directory for an explicit OBJ material file and its sidecars.</td><td>OBJ file directory</td></tr>
         <tr><td><code>texture</code></td><td>Explicit PLY texture. PLY otherwise reads common texture-file comments from its header.</td><td>Header-discovered when available</td></tr>
@@ -95,6 +95,15 @@ presenter.removeObject('newMarker');</code></pre>
   remoteModel: {
     file: 'https://my.site.com/assets?file=33552_ll',
     format: 'ply'
+  }
+}</code></pre>
+
+    <p>Native point-cloud formats infer their representation automatically, including for extensionless endpoints:</p>
+    <pre><code>objects: {
+  scan: {
+    file: 'https://my.site.com/scan?id=33552',
+    format: 'e57',
+    pointSize: 0.02
   }
 }</code></pre>
 
@@ -112,7 +121,7 @@ presenter.removeObject('newMarker');</code></pre>
     <p>See the <a href="../examples/splats.html">Gaussian splat example</a> for a complete scene.</p>
 
     <h4>Point-cloud objects</h4>
-    <p>Set <code>type: 'pointcloud'</code> to render the source vertices as points instead of triangles. This is an explicit representation choice: even if the source file contains faces, faces and indices are ignored. The default point size is <code>0.01</code> world units; set <code>pointSize</code> when needed.</p>
+    <p>Set <code>type: 'pointcloud'</code> to render an ambiguous source such as PLY as points instead of triangles. This is an explicit representation choice: even if the source file contains faces, faces and indices are ignored. LAS, LAZ, and E57 infer this representation automatically. The default point size is <code>0.01</code> world units; set <code>pointSize</code> when needed.</p>
     <pre><code>objects: {
   survey: {
     type: 'pointcloud',
@@ -208,6 +217,7 @@ presenter.setObjectTransform('sculpture', {
 
     <h3>Appearance</h3>
     <p>Appearance values are grouped so material and visibility changes can be read or updated together. The defaults are <code>color: 0xffffff</code>, <code>alpha: 0.5</code>, <code>transparent: false</code>, and <code>uniform: false</code>. These values are independent: setting <code>alpha</code> never changes <code>transparent</code>, setting <code>transparent</code> uses the current alpha, setting <code>color</code> never changes <code>uniform</code>, and setting <code>uniform</code> does not change color.</p>
+    <p>For Nexus and PLY assets, authored textures and vertex colors are combined when both are available: the vertex color modulates the sampled texture. If only one source is present, that source is used. Set <code>uniform: true</code> to replace both authored color sources with the configured uniform color.</p>
     <pre><code>objects: {
   sculpture: {
     file: 'models/sculpture.glb',

@@ -1,7 +1,7 @@
 import type * as THREE from 'three';
 
 export type EntityType = 'model' | 'pointcloud' | 'splat' | 'hotspot' | 'geometry';
-export type ModelFormat = 'auto' | 'nxz' | 'nxs' | 'glb' | 'gltf' | 'ply' | 'obj' | 'stl';
+export type ModelFormat = 'auto' | 'nxz' | 'nxs' | 'glb' | 'gltf' | 'ply' | 'obj' | 'stl' | 'las' | 'laz' | 'e57';
 export type EntityBehaviorProfile = 'scene' | 'helper' | 'overlay' | 'interactive-helper';
 export type Vector3Tuple = [number, number, number];
 /** Euler rotation in degrees for scene authoring. Three.js runtime rotations remain radians. */

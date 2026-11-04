@@ -17,6 +17,14 @@ export default defineConfig(({ mode }) => ({
     dedupe: ['three'],
     alias: [
       {
+        find: 'web-e57/e57_bg.js',
+        replacement: resolve(__dirname, 'node_modules/web-e57/e57_bg.js')
+      },
+      {
+        find: /^web-e57\/e57_bg\.wasm/,
+        replacement: resolve(__dirname, 'node_modules/web-e57/e57_bg.wasm')
+      },
+      {
         find: /^three$/,
         replacement: resolve(__dirname, 'node_modules/three/build/three.module.js')
       }
