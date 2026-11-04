@@ -6,7 +6,7 @@ export type ToolbarPosition =
   | 'bottom-left' | 'bottom-center' | 'bottom-right'
   | 'left-center' | 'right-center';
 
-export type ToolbarButtonId = 'home' | 'fit' | 'zoomIn' | 'zoomOut' | 'measure' | 'pickpoint' | 'section' | 'camera' | 'fullscreen';
+export type ToolbarButtonId = 'home' | 'fit' | 'zoomIn' | 'zoomOut' | 'measure' | 'pickpoint' | 'section' | 'camera' | 'screenshot' | 'fullscreen';
 export type ToolbarItemId = ToolbarButtonId | 'spacer' | 'hardrule';
 export type ToolbarIcon = string | Node;
 
@@ -248,6 +248,17 @@ export class Toolbar {
           toggle: true,
           onClick: () => presenter.setCameraType(presenter.getCameraType() === 'perspective' ? 'orthographic' : 'perspective'),
           isActive: () => presenter.getCameraType() === 'orthographic'
+        };
+      case 'screenshot':
+        return {
+          kind: 'button',
+          key: id,
+          id,
+          label: 'Save screenshot',
+          icon: '▣',
+          toggle: false,
+          onClick: () => presenter.downloadScreenshot(),
+          isActive: () => false
         };
       case 'fullscreen':
         return {

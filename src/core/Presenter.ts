@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { SparkRenderer } from '@sparkjsdev/spark';
-import type { AnimationClipInfo, CameraProjection, CameraType, EntityDefinition, EntityTransform, EntityTransformSnapshot, GeometryEntity, HelperDefinition, HotspotEntity, HotspotPrimitive, MaterialProperties, ModelEntity, ObjectAnimationOptions, ObjectAnimationState, ObjectAppearance, PointCloudEntity, SceneDescription, SceneObjectDefinition, SceneTransform, SceneTransformSnapshot, SplatEntity, SpotAppearance, SpotDefinition, WorldBackground } from '../types/SceneTypes';
+import type { AnimationClipInfo, CameraProjection, CameraType, EntityDefinition, EntityTransform, EntityTransformSnapshot, GeometryEntity, HelperDefinition, HotspotEntity, HotspotPrimitive, MaterialProperties, ModelEntity, ObjectAnimationOptions, ObjectAnimationState, ObjectAppearance, PointCloudEntity, SceneDescription, SceneObjectDefinition, SceneTransform, SceneTransformSnapshot, SplatEntity, SpotAppearance, SpotDefinition, WorldBackground, WorldBackgroundUpdate } from '../types/SceneTypes';
 import { EntityManager } from '../managers/EntityManager';
 import { ModelLoader } from '../loaders/ModelLoader';
 import { Trackball, type TrackballChangeListener, type TrackballMode, type TrackballStatus, type ViewDirection, type Viewpoint } from '../controls/Trackball';
@@ -19,6 +19,13 @@ export interface PresenterConfig {
   antialias?: boolean;
   alpha?: boolean;
   shadows?: boolean;
+}
+
+export type ScreenshotMimeType = 'image/png' | 'image/jpeg' | 'image/webp';
+
+export interface ScreenshotOptions {
+  mimeType?: ScreenshotMimeType;
+  quality?: number;
 }
 
 export type SceneReadyListener = () => void;
@@ -54,6 +61,8 @@ export class Presenter {
   private readonly extentHelpers = new Set<THREE.Box3Helper>();
   private readonly extentGrids = new Map<THREE.GridHelper, { minimumSize: number; initialSize: number; followSceneExtent: boolean }>();
   private backgroundTexture?: THREE.Texture;
+  private backgroundDefinition?: WorldBackground;
+  private backgroundVisible = true;
   private readonly sceneReadyListeners = new Set<SceneReadyListener>();
   private readonly objectManager: EntityManager;
   private readonly spotManager: EntityManager;
@@ -348,6 +357,65 @@ export class Presenter {
     this.refreshSceneBounds();
   }
 
+  getBackground(): WorldBackground | undefined {
+    if (!this.backgroundDefinition) return undefined;
+    return { ...this.backgroundDefinition, visible: this.backgroundVisible };
+  }
+
+  async setBackground(update: number | WorldBackgroundUpdate): Promise<void> {
+    const current = this.backgroundDefinition;
+    let next: WorldBackground;
+    let visible = typeof update === 'number' ? true : update.visible ?? this.backgroundVisible;
+
+    if (typeof update === 'number') {
+      next = { color: update };
+    } else {
+      const hasColor = update.color !== undefined;
+      const hasFile = update.file !== undefined;
+      if (hasColor && hasFile) throw new Error('A background update cannot specify both color and file.');
+
+      if (hasColor) {
+        next = { color: update.color as number };
+      } else if (hasFile) {
+        next = {
+          file: update.file as string,
+          azimuth: update.azimuth ?? (current && 'azimuth' in current ? current.azimuth : undefined)
+        };
+      } else if (current) {
+        next = { ...current };
+      } else {
+        throw new Error('A background color or file is required before setting background properties.');
+      }
+    }
+
+    if ('color' in next) {
+      this.backgroundTexture?.dispose();
+      this.backgroundTexture = undefined;
+      this.scene.background = visible ? new THREE.Color(next.color) : null;
+      this.scene.backgroundRotation.set(0, 0, 0);
+    } else {
+      const sameImage = current && 'file' in current && current.file === next.file && this.backgroundTexture;
+      if (!sameImage) {
+        const texture = await new THREE.TextureLoader().loadAsync(new URL(next.file, window.location.href).href);
+        texture.colorSpace = THREE.SRGBColorSpace;
+        texture.mapping = THREE.EquirectangularReflectionMapping;
+        this.backgroundTexture?.dispose();
+        this.backgroundTexture = texture;
+      }
+      const azimuth = THREE.MathUtils.degToRad(next.azimuth ?? 0);
+      const upAxis = this.trackball.getUpAxis();
+      this.scene.backgroundRotation.set(
+        upAxis === 'z' ? Math.PI / 2 : 0,
+        upAxis === 'y' ? azimuth : 0,
+        upAxis === 'z' ? azimuth : 0
+      );
+      this.scene.background = visible ? this.backgroundTexture ?? null : null;
+    }
+
+    this.backgroundDefinition = { ...next, visible };
+    this.backgroundVisible = visible;
+  }
+
   getCameraType(): CameraType {
     return this.cameraType;
   }
@@ -425,6 +493,34 @@ export class Presenter {
 
   get container(): HTMLElement {
     return this.mount;
+  }
+
+  captureScreenshot(options: ScreenshotOptions = {}): string {
+    const mimeType = validateScreenshotOptions(options);
+    this.renderer.render(this.scene, this.camera);
+    return this.renderer.domElement.toDataURL(mimeType, options.quality);
+  }
+
+  captureScreenshotBlob(options: ScreenshotOptions = {}): Promise<Blob> {
+    const mimeType = validateScreenshotOptions(options);
+    this.renderer.render(this.scene, this.camera);
+    return new Promise((resolve, reject) => {
+      this.renderer.domElement.toBlob((blob) => {
+        if (blob) {
+          resolve(blob);
+        } else {
+          reject(new Error('The browser could not create a screenshot Blob.'));
+        }
+      }, mimeType, options.quality);
+    });
+  }
+
+  downloadScreenshot(filename: string | undefined = undefined, options: ScreenshotOptions = {}): void {
+    const mimeType = validateScreenshotOptions(options);
+    const link = document.createElement('a');
+    link.download = filename ?? `screenshot_${formatScreenshotTimestamp(new Date())}.${mimeType.split('/')[1]}`;
+    link.href = this.captureScreenshot(options);
+    link.click();
   }
 
   private updateCameraRange(): void {
@@ -809,36 +905,30 @@ export class Presenter {
     cancelAnimationFrame(this.animationFrame);
   }
 
-  private async setBackground(background: number | WorldBackground): Promise<void> {
-    if (typeof background === 'number') {
-      this.scene.background = new THREE.Color(background);
-      return;
-    }
-    if ('color' in background) {
-      this.scene.background = new THREE.Color(background.color);
-      return;
-    }
-
-    const texture = await new THREE.TextureLoader().loadAsync(new URL(background.file, window.location.href).href);
-    texture.colorSpace = THREE.SRGBColorSpace;
-    texture.mapping = THREE.EquirectangularReflectionMapping;
-    const azimuth = THREE.MathUtils.degToRad(background.azimuth ?? 0);
-    const upAxis = this.trackball.getUpAxis();
-    this.scene.backgroundRotation.set(
-      upAxis === 'z' ? Math.PI / 2 : 0,
-      upAxis === 'y' ? azimuth : 0,
-      upAxis === 'z' ? azimuth : 0
-    );
-    this.backgroundTexture = texture;
-    this.scene.background = texture;
-  }
-
   private clearBackground(): void {
     this.scene.background = null;
     this.scene.backgroundRotation.set(0, 0, 0);
     this.backgroundTexture?.dispose();
     this.backgroundTexture = undefined;
+    this.backgroundDefinition = undefined;
+    this.backgroundVisible = true;
   }
+}
+
+function validateScreenshotOptions(options: ScreenshotOptions): ScreenshotMimeType {
+  const mimeType = options.mimeType ?? 'image/png';
+  if (!['image/png', 'image/jpeg', 'image/webp'].includes(mimeType)) {
+    throw new Error(`Unsupported screenshot MIME type: ${mimeType}.`);
+  }
+  if (options.quality !== undefined && (!Number.isFinite(options.quality) || options.quality < 0 || options.quality > 1)) {
+    throw new Error('Screenshot quality must be a number between 0 and 1.');
+  }
+  return mimeType;
+}
+
+function formatScreenshotTimestamp(date: Date): string {
+  const pad = (value: number): string => String(value).padStart(2, '0');
+  return `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}-${pad(date.getHours())}${pad(date.getMinutes())}${pad(date.getSeconds())}`;
 }
 
 function resolveMount(mount: HTMLElement | string): HTMLElement {

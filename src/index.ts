@@ -1,7 +1,7 @@
 export * as THREE from 'three';
 export { VERSION } from './version';
 export { Presenter } from './core/Presenter';
-export type { PresenterConfig, SceneReadyListener, SpotClickEvent, SpotClickListener } from './core/Presenter';
+export type { PresenterConfig, SceneReadyListener, ScreenshotMimeType, ScreenshotOptions, SpotClickEvent, SpotClickListener } from './core/Presenter';
 export { MODEL_LOAD_DEFAULTS, POINT_CLOUD_DEFAULTS, ModelLoader } from './loaders/ModelLoader';
 export type { ModelLoadDefinition, ModelLoadDefaults, ModelLoaderConfig } from './loaders/ModelLoader';
 export { EntityManager } from './managers/EntityManager';
@@ -86,5 +86,6 @@ export type {
   WorldBackground,
   WorldBackgroundColor,
   WorldBackgroundImage,
+  WorldBackgroundUpdate,
   WorldConfig
 } from './types/SceneTypes';

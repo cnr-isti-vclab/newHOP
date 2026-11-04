@@ -40,3 +40,9 @@ The simplest feasible approach is a shader-level adjustment that detects back fa
 Support a lat-long/equirectangular image in the `world` block as an environment resource. The environment's vertical orientation should follow the scene/navigation `upAxis`, while an explicit azimuth rotation should allow authors to align the image with the authored scene.
 
 Keep background display and environment lighting as separate choices. The image may be used as a visible background, as a reflection source for specular materials, or both. Diffuse image-based illumination should not be assumed to come directly from the sharp environment image: prefer a prefiltered or blurred representation, such as a PMREM-generated environment, and allow it to be disabled or configured independently when explicit scene lights provide the diffuse contribution.
+
+## Arbitrary-Resolution Screenshots
+
+Allow authors to request screenshots at a resolution different from the visible viewer canvas, for example a 1920 x 1080 PNG generated from a smaller embedded viewer. Rendering should preferably use an offscreen target so the visible canvas, toolbar, and interaction state are not disrupted.
+
+The screenshot options should define how a requested aspect ratio affects framing, such as preserving the current view, refitting the camera, cropping, or using letterboxing. The implementation should preserve camera and renderer state after capture, support the existing data-URL and Blob output paths, and reject dimensions that exceed browser or GPU limits.

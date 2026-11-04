@@ -15,6 +15,8 @@ This is a working plan, not a promise of release dates. Keep entries small enoug
 - Helpers support explicit world-space placement; fixed-position grids no longer follow scene-bound refreshes.
 - Static HTML documentation covers navigation, objects, and spots.
 - Static HTML documentation includes an Interaction reference covering tool ownership and the intended picking and click contracts.
+- Presenter screenshots support PNG, JPEG, and WebP data-URL or Blob output, timestamped downloads, and an opt-in toolbar control.
+- World backgrounds support runtime partial get/set updates and visibility toggling while retaining loaded image resources.
 - The basic Toolbar includes an optional `pickpoint` control with an attached object ID and coordinate readout.
 - Auxiliary interaction modes include configurable pickpoint feedback through `setInteractionMode(mode, options?)`.
 - Entity behavior profiles currently control bounds, clipping, generic picking, and distance measurement for imported, hotspot, and procedural entities.

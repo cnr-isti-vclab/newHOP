@@ -163,14 +163,17 @@ export interface SpotDefinition extends SpotVisuals, EntityTransform {
 /** 3D environment properties: background, camera, and similar world-level settings. */
 export interface WorldBackgroundColor {
   color: number;
+  visible?: boolean;
 }
 
 export interface WorldBackgroundImage {
   file: string;
   azimuth?: number;
+  visible?: boolean;
 }
 
 export type WorldBackground = WorldBackgroundColor | WorldBackgroundImage;
+export type WorldBackgroundUpdate = Partial<WorldBackgroundColor> & Partial<WorldBackgroundImage>;
 
 export interface WorldConfig {
   background?: number | WorldBackground;

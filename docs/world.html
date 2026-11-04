@@ -28,7 +28,7 @@
     <p class="lede">The <code>world</code> block defines the scene background, camera projection, and transforms applied to all authored content. Camera movement and interaction settings belong to the separate <code>navigation</code> block.</p>
 
     <h2>Background</h2>
-    <p>Set a solid background with a hexadecimal color number or an object containing <code>color</code>. An image background uses an equirectangular image; its URL is resolved relative to the document URL.</p>
+    <p>Set a solid background with a hexadecimal color number or an object containing <code>color</code>. An image background uses an equirectangular image; its URL is resolved relative to the document URL. Both object forms accept optional <code>visible</code>, which defaults to <code>true</code>.</p>
     <pre><code>world: {
   background: 0x202b3c
 }
@@ -37,10 +37,23 @@
 world: {
   background: {
     file: 'media/environment.jpg',
-    azimuth: -90
+    azimuth: -90,
+    visible: true
   }
 }</code></pre>
     <p>The image azimuth is in degrees. Its vertical orientation follows <code>navigation.upAxis</code>. A background image is displayed as the scene background; environment lighting is configured separately through the <a href="illumination.html">lighting block</a>.</p>
+
+    <h2>Runtime Background Control</h2>
+    <p>The Presenter exposes the current background and accepts partial updates. Omitted properties keep their current values. Hiding an image background keeps its loaded texture and settings, so it can be shown again without reloading.</p>
+    <pre><code>const background = presenter.getBackground();
+
+await presenter.setBackground({ visible: false });
+const screenshot = await presenter.captureScreenshotBlob();
+await presenter.setBackground({ visible: true });
+
+await presenter.setBackground({ azimuth: 30 });
+await presenter.setBackground({ color: 0x202b3c });</code></pre>
+    <p>When the scene uses the numeric color shorthand, <code>getBackground()</code> returns the normalized object form. A color and file cannot be supplied in the same update.</p>
 
     <h2>Camera Projection</h2>
     <p>Perspective is the default projection. Select orthographic projection through <code>world.camera.type</code>. Projection belongs to the world camera, while movement and orbit behavior belong to navigation.</p>
