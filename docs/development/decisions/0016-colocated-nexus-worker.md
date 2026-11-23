@@ -13,6 +13,6 @@ Place `corto.em.js` beside each built newHOP library. The global build captures 
 
 ## Consequences
 
-- The minimal deployment can be moved or renamed without changing its worker path.
+- A deployment can be moved or renamed without changing its worker path, provided the worker remains beside the loaded library.
 - Deployments using Nexus models must keep `corto.em.js` beside the loaded newHOP library.
 - Applications that inline the library instead of loading a built library file have no separate library URL to derive the worker location from.

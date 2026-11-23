@@ -38,8 +38,9 @@
     </section>
   </div>
 
-  <script type="module">
-    import { Presenter, Toolbar } from '../src/index.ts';
+  <script src="../dist/newhop.global.js"></script>
+  <script>
+    const { Presenter, Toolbar } = newHOP;
 
     const presenter = new Presenter({ mount: 'viewer' });
     new Toolbar(presenter, { position: 'bottom-center', buttons: ['home', 'fit', 'zoomIn', 'zoomOut', 'fullscreen'] });

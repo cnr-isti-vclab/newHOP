@@ -2,7 +2,7 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Open minimal example in browser",
+      "name": "Open examples in browser",
       "type": "pwa-chrome",
       "request": "launch",
       "url": "http://127.0.0.1:5173/",

@@ -6,10 +6,9 @@
   "type": "module",
   "description": "A modern three.js framework for interactive 3D Heritage presentations",
   "scripts": {
-    "build": "tsc --noEmit && npm run build:esm && npm run build:global && npm run build:minimal",
+    "build": "tsc --noEmit && npm run build:esm && npm run build:global",
     "build:esm": "vite build --mode esm",
     "build:global": "vite build --mode global",
-    "build:minimal": "node scripts/build-minimal.mjs",
     "dev": "vite",
     "typecheck": "tsc --noEmit"
   },

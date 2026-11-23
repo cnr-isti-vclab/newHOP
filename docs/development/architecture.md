@@ -38,7 +38,7 @@ Entities use named behavior profiles to group participation in scene bounds, cli
 
 As a preferred convention, configurable features should place readable defaults structures near the beginning of the owning module. An exported defaults structure mirrors the author-facing option declaration shape and contains only parameters authors can set at declaration time or runtime; fixed implementation constants preferably belong in a separate private structure or grouped private constants. Defaults are the reference point for initialization and, where possible, runtime update normalization; fallback values should not be duplicated as unrelated literals across constructors and setters. This convention is advisory rather than blocking when another structure is clearer or more practical. The author-configurable pickpoint and distance defaults are available as the exported `PICKING_DEFAULTS` and `MEASUREMENT_DEFAULTS` structures; navigation and its visualizer use `TRACKBALL_DEFAULTS` and `TRACKBALL_GIZMO_DEFAULTS`.
 
-The renderer enables antialiasing and shadow maps by default. Pass `shadows: false` to the `Presenter` constructor to disable shadow rendering for lightweight scenes. Runtime meshes cast and receive shadows automatically; individual scene lights opt into shadow casting with `castShadow: true`. The Presenter owns spot click semantics: it resolves hotspot entities through the shared picking raycaster and dispatches only completed primary-button clicks, keeping navigation drags from activating spots. Applications can use the compatibility `onSpotClicked` callback or the `spotclick` subscription event. The public interaction responsibilities and pointer ownership are summarized in [`docs/interaction.html`](interaction.html); generic object picking is being separated from the scene-wide raycast used by spot clicks and double-click recentering.
+The renderer enables antialiasing and shadow maps by default. Pass `shadows: false` to the `Presenter` constructor to disable shadow rendering for lightweight scenes. Runtime meshes cast and receive shadows automatically; individual scene lights opt into shadow casting with `castShadow: true`. The Presenter owns spot click semantics: it resolves hotspot entities through the shared picking raycaster and dispatches only completed primary-button clicks, keeping navigation drags from activating spots. Applications can use the compatibility `onSpotClicked` callback or the `spotclick` subscription event. The public interaction responsibilities and pointer ownership are summarized in [`docs/authoring/interaction.html`](../authoring/interaction.html); generic object picking is being separated from the scene-wide raycast used by spot clicks and double-click recentering.
 
 ## Scene Description
 
@@ -154,7 +154,12 @@ The library builds as:
 - ESM: `dist/newhop.js`
 - global bundle: `dist/newhop.global.js`
 - Nexus worker beside the bundles: `dist/corto.em.js`
-- minimal publishable library: `minimal/lib/newhop.global.js`
-- minimal Nexus worker: `minimal/lib/corto.em.js`
 
-Examples remain plain HTML/JavaScript and import the TypeScript source during development.
+Examples remain plain HTML/JavaScript and load the generated global bundle from `dist/newhop.global.js`. This keeps the examples aligned with the local build that is validated and later packaged for authors.
+
+The repository is also the source for a separate authoring distribution. The
+future distribution builder will collect the built files from `dist/`, curated
+examples and redistributable assets from `examples/`, and author-facing
+material from `docs/authoring/`. Developer documentation, root project files,
+and ignored `workbench/` content remain outside that package. See
+[Decision 0023](decisions/0023-authoring-distribution-boundary.md).

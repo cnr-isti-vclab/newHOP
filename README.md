@@ -88,8 +88,6 @@ The build produces:
 - `dist/newhop.js` - ESM library build
 - `dist/newhop.global.js` - self-contained browser global build
 - `dist/corto.em.js` - Nexus3D worker beside the built library
-- `minimal/lib/newhop.global.js` - refreshed minimal deployment bundle
-- `minimal/lib/corto.em.js` - refreshed Nexus3D worker beside the minimal bundle
 
 The ESM build externalizes Three.js for application bundlers. The global build bundles Three.js and Spark support, making it suitable for a simple browser deployment without CDN dependencies.
 
@@ -132,32 +130,34 @@ await presenter.setScene({
 
 ## Offline Deployment
 
-For a fully local kiosk deployment, serve `minimal/` over HTTP. It can be deployed at the site root or under a subdirectory:
+For a fully local kiosk deployment, use the built files from `dist/` and copy them beside your authoring page. The [minimal example](examples/minimal.html) demonstrates the global bundle during development:
 
 ```text
-minimal/
-  index.html
-  lib/
-    newhop.global.js
-    corto.em.js          # required when Nexus models are used
+dist/
+  newhop.global.js
+  corto.em.js            # required when Nexus models are used
+examples/
+  minimal.html
   models/
 ```
 
-Gaussian splat scenes need the global bundle and their local `.ply` files. newHOP locates the Nexus worker beside the loaded library, so the complete `minimal/` folder can be served from a subdirectory or renamed without path configuration. The build refreshes both generated files in `minimal/lib/`; keep `index.html` and model assets there. No internet connection, CDN, npm installation, or Node.js runtime is required after the bundle has been built.
+Gaussian splat scenes need the global bundle and their local `.ply` files. newHOP locates the Nexus worker beside the loaded library, so copy `newhop.global.js` and `corto.em.js` together when deploying a page that uses Nexus models. No internet connection, CDN, npm installation, or Node.js runtime is required after the built files and assets have been copied to the deployment.
 
 ## Documentation
 
-- [Object authoring](docs/objects.html)
-- [World configuration](docs/world.html)
-- [Navigation](docs/navigation.html)
-- [Spots](docs/spots.html)
-- [Architecture](docs/architecture.md)
-- [Contributing](docs/contributing.md)
-- [Roadmap](docs/roadmap.md)
-- [Architecture decisions](docs/decisions/)
+- [Authoring documentation](docs/authoring/index.html)
+- [Authoring package README](docs/authoring/README.md)
+- [Object authoring](docs/authoring/objects.html)
+- [World configuration](docs/authoring/world.html)
+- [Navigation](docs/authoring/navigation.html)
+- [Spots](docs/authoring/spots.html)
+- [Architecture](docs/development/architecture.md)
+- [Contributing](docs/development/contributing.md)
+- [Roadmap](docs/development/roadmap.md)
+- [Architecture decisions](docs/development/decisions/)
 
 ## Repository Notes
 
-`dist/` and `node_modules/` are generated or installed content. The `examples/models/` directory contains regular development assets, while `examples/large_assets/` contains larger local assets. Large Gaussian-splat and Nexus files should be reviewed before committing them to a public Git repository; smaller substitutes or Git LFS may be more appropriate.
+`dist/` and `node_modules/` are generated or installed content. The `examples/models/` directory contains redistributable example assets, while `examples/large_assets/` contains larger local assets. The ignored `workbench/` directory is reserved for project pages, experiments, and project-specific or non-redistributable assets. Large Gaussian-splat and Nexus files should be reviewed before committing them to a public Git repository; smaller substitutes or Git LFS may be more appropriate.
 
 The project is currently focused on the core viewer, scene authoring API, examples, and documentation. See the roadmap and decision records for current priorities and architectural context.

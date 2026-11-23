@@ -35,8 +35,9 @@
     </section>
   </div>
 
+  <script src="../dist/newhop.global.js"></script>
   <script type="module">
-    import { Presenter, Toolbar } from '../src/index.ts';
+    const { Presenter, Toolbar } = newHOP;
 
     const presenter = new Presenter({ mount: 'viewer', antialias: false });
     new Toolbar(presenter, {

@@ -9,7 +9,7 @@ newHOP has two audiences: authors using the library and developers changing the 
 
 ## Decision
 
-Keep plain HTML pages for user-facing authoring and API reference. Keep Markdown files in `docs/` for architecture, contribution workflow, roadmap, and decision records.
+Keep author-facing HTML pages in `docs/authoring/` for authoring and API reference. Keep developer Markdown files in `docs/development/` for architecture, contribution workflow, roadmap, desiderata, and decision records.
 
 The documentation index links to the HTML reference pages. Contributor documents are versioned with the source and reviewed like code.
 

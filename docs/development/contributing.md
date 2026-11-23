@@ -31,7 +31,7 @@ npm run typecheck
 npm run build
 ```
 
-The build performs TypeScript checking, creates ESM and global bundles, and refreshes `minimal/lib/`.
+The build performs TypeScript checking and creates ESM and global bundles in `dist/`.
 
 ## Updating the Version
 
@@ -64,8 +64,8 @@ Useful URLs while the dev server is running:
 - `http://127.0.0.1:5173/examples/transforms.html`
 - `http://127.0.0.1:5173/examples/z-up.html`
 - `http://127.0.0.1:5173/examples/lighting.html`
-- `http://127.0.0.1:5173/docs/illumination.html`
-- `http://127.0.0.1:5173/docs/index.html`
+- `http://127.0.0.1:5173/docs/authoring/illumination.html`
+- `http://127.0.0.1:5173/docs/authoring/index.html`
 
 The advanced example is the main integration surface for multiple models, transforms, tools, clipping, picking, measurement, and navigation.
 The splat example uses `examples/large_assets/well_splat.ply`, which is intentionally a large development asset and should be replaced with a smaller sample or kept out of a lightweight source distribution.
@@ -73,10 +73,12 @@ The splat example uses `examples/large_assets/well_splat.ply`, which is intentio
 ## Directory Rules
 
 - `src/`: TypeScript library source.
-- `examples/`: development and feature-validation pages.
-- `docs/`: published HTML reference pages and contributor Markdown.
-- `minimal/`: clean publishable example. Its `index.html` and `models/` are manually maintained; the build refreshes `minimal/lib/newhop.global.js` and `minimal/lib/corto.em.js`, which must stay beside each other.
+- `examples/`: development and feature-validation pages. Every example loads the generated `dist/newhop.global.js` bundle.
+- `docs/authoring/`: author-facing HTML reference pages suitable for the distribution.
+- `docs/development/`: architecture, contribution, roadmap, desiderata, and decision records for developers.
 - `dist/`: generated bundle output.
+- `workbench/`: ignored local project pages, experiments, and large or project-specific assets; this is not the automated test suite.
+- `tests/`: reserved for committed, reproducible automated and feature-specific validation.
 - `scripts/`: build helpers.
 
 Do not edit generated bundles by hand.

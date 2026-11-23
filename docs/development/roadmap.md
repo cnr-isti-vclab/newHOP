@@ -75,12 +75,12 @@ This is a working plan, not a promise of release dates. Keep entries small enoug
 ### Tools and UI
 
 - Add examples for compass and minimap observers using `onNavigationChange`.
-- Add focused browser coverage for the object-only, drag-qualified generic picking contract described in `docs/interaction.html`.
+- Add focused browser coverage for the object-only, drag-qualified generic picking contract described in `docs/authoring/interaction.html`.
 - Improve Toolbar customization and accessibility.
 
 ### Quality and Collaboration
 
-- Add automated browser checks for minimal and advanced examples.
+- Add automated browser checks for the minimal and advanced examples.
 - Add unit tests for pure navigation math and limit normalization.
 - Carefully review scene disposal for both in-place scene reset and permanent Presenter/viewer removal, including animation mixers, event listeners, renderer resources, and overlapping asynchronous scene loads.
 - Add a pull-request checklist and CI workflow after the shared GitHub repository is created.
@@ -89,9 +89,11 @@ This is a working plan, not a promise of release dates. Keep entries small enoug
 ### Repository Preparation
 
 - Finish a small set of tests, examples, and documentation improvements before creating the public repository.
-- Decide whether newHOP should use MIT or GPLv3 based on the intended reuse and contribution model; ownership of 3DHOP does not by itself determine the newHOP license.
+- Curate `examples/` and its assets as the author-facing distribution set.
+- Implement and validate a generated authoring distribution from the curated files.
+- Review the MIT license and redistribution rights for bundled dependencies and example assets separately from the source-code license.
 - Review the licenses and redistribution rights for bundled model and image assets separately from the source-code license.
-- Define the first repository snapshot, including whether generated minimal bundles and large demonstration assets belong in Git.
+- Define the first repository snapshot, including which generated bundles and large demonstration assets belong in Git.
 
 ## Open Questions
 
