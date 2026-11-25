@@ -42,8 +42,8 @@
 <body>
   <div id="viewer">
     <section class="panel">
-      <h1>Animated GLB</h1>
-      <p>Named clip playback and time-based scrubbing.</p>
+      <h1>GLB morph-target animation</h1>
+      <p>Shape-key clip playback, looping, and time-based scrubbing.</p>
       <div class="row">
         <label for="clip">Animation</label>
         <select id="clip"></select>
@@ -99,7 +99,7 @@
       },
       objects: {
         animated: {
-          file: 'models/test_shapek.glb',
+          file: 'models/shapekeys.glb',
           animation: {
             autoplay: true,
             mode: 'loop'

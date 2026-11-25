@@ -18,7 +18,7 @@
     const presenter = new Presenter({ mount: 'viewer' });
     new Toolbar(presenter, {
       position: 'bottom-center',
-      buttons: ['home', 'fit', 'zoomIn', 'zoomOut', 'measure', 'section', 'pickpoint', 'screenshot', 'fullscreen']
+      buttons: ['home', 'zoomIn', 'zoomOut', 'measure', 'section', 'pickpoint', 'screenshot', 'fullscreen']
     });
 
     presenter.measurement.onCompleteResult((result) => {
@@ -34,18 +34,14 @@
       },
       navigation: {
         type: 'turntable',
-        homeView: { azimuth: 0, elevation: 0 }
+        homeView: { azimuth: 15, elevation: 10, distance: 1000 }
       },
       helpers: {
         origin: { type: 'axes', size: 300, color: 0xa5b4fc },
-        floor: { type: 'grid', size: 100, spacing: 5.0, color: 0x7dd3fc, opacity: 0.7 },
-        extent: { type: 'sceneextent'}
+        baseGrid: { type: 'grid', size: 200, spacing: 10.0, color: 0x7dd3fc, opacity: 0.7 },
       },
       objects: {
         laurana: { file: 'models/laurana.ply' }
-      },
-      spots: {
-        hotspot: { primitive: 'sphere', size: 0.1 }
       }
     }).then(() => {});
   </script>
