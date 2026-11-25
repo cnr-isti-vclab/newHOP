@@ -1,7 +1,5 @@
 node_modules/
 dist/
-examples/large_assets/*
-!examples/large_assets/README.md
 *.tsbuildinfo
 .DS_Store
 
