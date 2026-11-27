@@ -9,6 +9,7 @@
     "build": "tsc --noEmit && npm run build:esm && npm run build:global",
     "build:esm": "vite build --mode esm",
     "build:global": "vite build --mode global",
+    "build:distribution": "npm run build && node scripts/build-distribution.mjs",
     "dev": "vite",
     "typecheck": "tsc --noEmit"
   },

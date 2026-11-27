@@ -29,9 +29,12 @@ Run these from `newHOP/`:
 ```text
 npm run typecheck
 npm run build
+npm run build:distribution
 ```
 
-The build performs TypeScript checking and creates ESM and global bundles in `dist/`.
+The build performs TypeScript checking and creates ESM and global bundles in
+`dist/`. `build:distribution` runs the build and creates the generated,
+ignored authoring package in `distribution/`.
 
 ## Updating the Version
 
@@ -48,6 +51,7 @@ When the workspace root is `newHOP`, use the configured tasks:
 
 - `newHOP: Typecheck`
 - `newHOP: Build`
+- `newHOP: Build distribution`
 - `newHOP: Start dev server`
 
 The dev task runs Vite from the workspace root at `http://127.0.0.1:5173/`. If port 5173 is already occupied, Vite may choose the next available port; use the URL reported in the task output.
@@ -96,4 +100,4 @@ Keep public APIs and scene-block names consistent. Runtime mutators on `Trackbal
 
 ## Documentation Rules
 
-HTML pages document authoring and public usage. Markdown pages document project architecture, collaboration, workflows, and decisions. When a design choice changes, update the relevant decision record and architecture notes.
+HTML pages document authoring and public usage. Markdown pages document project architecture, collaboration, workflows, and decisions. When a design choice changes, update the relevant decision record and architecture notes. Use the [release checklist](release.md) when preparing a library or authoring-distribution release.

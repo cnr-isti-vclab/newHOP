@@ -1,0 +1,71 @@
+name: Release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out selected revision
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate release version
+        id: version
+        shell: bash
+        run: echo "version=$(node scripts/validate-release-version.mjs)" >> "$GITHUB_OUTPUT"
+
+      - name: Check that the release tag is available
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          if git ls-remote --exit-code origin "refs/tags/$VERSION" >/dev/null 2>&1; then
+            echo "Release tag already exists: $VERSION"
+            exit 1
+          fi
+
+      - name: Build and validate authoring distribution
+        run: npm run build:distribution
+
+      - name: Create release archives
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          mkdir -p release-assets "authoring-package/newhop-authoring-$VERSION"
+          git archive --format=zip --prefix="newhop-developer-$VERSION/" \
+            --output="release-assets/newhop-developer-$VERSION.zip" HEAD
+          cp -R distribution/. "authoring-package/newhop-authoring-$VERSION/"
+          (cd authoring-package && zip -qr "../release-assets/newhop-authoring-$VERSION.zip" "newhop-authoring-$VERSION")
+
+      - name: Create and push release tag
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          git tag "$VERSION" "$GITHUB_SHA"
+          git push origin "$VERSION"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          gh release create "$VERSION" \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "newHOP $VERSION" \
+            --generate-notes \
+            "release-assets/newhop-developer-$VERSION.zip" \
+            "release-assets/newhop-authoring-$VERSION.zip"

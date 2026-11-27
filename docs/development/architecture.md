@@ -163,3 +163,7 @@ examples and redistributable assets from `examples/`, and author-facing
 material from `docs/authoring/`. Developer documentation, root project files,
 and ignored `workbench/` content remain outside that package. See
 [Decision 0023](decisions/0023-authoring-distribution-boundary.md).
+
+The current builder is invoked with `npm run build:distribution`. It
+recreates the ignored `distribution/` directory, writes `version.json`, and
+checks required files and local HTML links.

@@ -32,6 +32,20 @@
       }
     },
     {
+      "label": "newHOP: Build distribution",
+      "type": "npm",
+      "script": "build:distribution",
+      "group": "build",
+      "problemMatcher": [
+        "$tsc"
+      ],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      }
+    },
+    {
       "label": "newHOP: Start dev server (local)",
       "type": "shell",
       "command": "npm run dev -- --host 127.0.0.1",
